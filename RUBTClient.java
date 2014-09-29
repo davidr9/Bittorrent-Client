@@ -7,16 +7,20 @@ public class RUBTClient {
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException {
 	
-		if (args.length != 2)
+		/*Error handling when user enters incorrect number of arguements*/
+        if (args.length != 2)
 		{
 			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
 			return;
 		}
 		
-		String inFileName = args[0];
+		/*arguement 0 is the torrent and argument 1 is a file that will be sent to server*/
+        String inFileName = args[0];
 		String outFileName = args[1];
 		
-		try {
+		
+        /*opens the torrent file or throws an exception if file doesn't exist*/
+        try {
 			File torrentFile = new File(inFileName);
 			if (!torrentFile.exists()){
 				System.err.println("Torrent file does not exist");
@@ -28,6 +32,15 @@ public class RUBTClient {
 			return;
 		}
 		
-	}
+	}/*end of main method*/
+
+    /*parses the data in the torrent file given by the user*/
+    private static void torrentParser(File torrentFile){
+         
+    }/*end of torrentParser method*/
+
+    private static void sendRequest(){
+
+    }/*end of sendRequest method*/
 
 }
