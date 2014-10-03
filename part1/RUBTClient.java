@@ -26,10 +26,11 @@ public class RUBTClient {
 			if (!torrentFile.exists()){
 				System.err.println("Torrent file does not exist");
 				return;
-                        /*parses torrent if torrent exists*/
-			}else{
-                            data_in_torrent = torrentParser(torrentFile);
-                        }
+			}
+			
+			/*parses torrent if torrent exists*/
+                        data_in_torrent = torrentParser(torrentFile);
+                      
 		} catch (NullPointerException e)
 		{
 			System.err.println("torrent file cannot be null");
@@ -42,14 +43,30 @@ public class RUBTClient {
 	}/*end of main method*/
 
     /*parses the data in the torrent file given by the user*/
-    private static TorrentInfo torrentParser(File torrentFile) throws BencodingException{
-            int length = (int) torrentFile.length();
-            byte[] tfile_byte = new byte[length];
-            TorrentInfo tInfo = new TorrentInfo(tfile_byte);
-            System.out.println("Torrent File is parsed");
-            return tInfo;
-        
-    }/*end of torrentParser method*/
+    private static TorrentInfo torrentParser(File torrentFile) throws BencodingException, FileNotFoundException, IOException{
+                try {
+                        FileInputStream torrentStream = new FileInputStream(torrentFile);
+                        DataInputStream torrentReader = new DataInputStream(torrentStream);
+                        int length = (int) torrentFile.length();
+                        byte[] tFile_byte = new byte[length];
+                        torrentReader.readFully(tFile_byte);
+                        torrentReader.close();
+                        torrentStream.close();
+                        TorrentInfo tInfo = new TorrentInfo(tFile_byte);
+                        System.out.println("Torrent File is parsed");
+                        return tInfo;
+                } catch (BencodingException e){
+                        System.err.println(e.getMessage());
+                        return null;
+                } catch (FileNotFoundException e){
+                        System.err.println(e.getMessage());
+                        return null;
+                } catch (IOException e){
+                        System.err.println(e.getMessage());
+                        return null;
+                }
+
+        }/*end of torrentParser method*/
 
     /*sends an HTTP GET request to the tracker and creates connection*/
     private static void sendRequestToTracker(TorrentInfo torrentInfo){
