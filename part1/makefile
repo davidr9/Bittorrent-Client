@@ -2,13 +2,13 @@ JFLAGS = -g
 JC = javac
 .SUFFIXES: .java .class
 .java.class:
-        $(JC) $(JFLAGS) $*.java
+	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
         Bencoder2.java \
         BencodingException.java \
         TorrentInfo.java \
-        ToolKit.java 
+        ToolKit.java \
         RUBTClient.java \
 
 
