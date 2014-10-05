@@ -4,6 +4,16 @@ import java.net.URL.*;
 
 
 public class RUBTClient {
+	
+	public static String extractIP(URL url){
+			System.out.println("HOST IS:" + url.getHost());
+			return url.getHost();
+		}
+		
+		public static int extractPort(URL url){
+			System.out.println("PORT IS:" + url.getPort());
+			return url.getPort();
+		}
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
@@ -39,6 +49,10 @@ public class RUBTClient {
         /*prints out the torrent file information. fields are the key value pairs of anounnce, info_hash, etc*/
         ToolKit.print(data_in_torrent.torrent_file_map);
         sendRequestToTracker(data_in_torrent);
+        
+        extractIP(data_in_torrent.announce_url);
+        extractPort(data_in_torrent.announce_url);
+
 		
 	}/*end of main method*/
 
