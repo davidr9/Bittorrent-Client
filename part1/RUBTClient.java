@@ -4,60 +4,12 @@ import java.net.URL.*;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class RUBTClient {
-	
-	public static String extractIP(URL url){
-			System.out.println("HOST IS:" + url.getHost());
-			return url.getHost();
-		}
 		
-	public static int extractPort(URL url){
-			System.out.println("PORT IS:" + url.getPort());
-			return url.getPort();
-		}
-		
-	/*
-     * This method takes in an info_hash of type ByteBuffer and returns its string representation.
-     * This algorithm can be found anywhere on the internet.
-     * */
-    @SuppressWarnings("unused")
-	private static String infoHashToURL(ByteBuffer info){
-    	/*Create a byte array out of the values from info*/ 
-    	byte[] info_bytes = new byte[info.capacity()];
-    	info.get(info_bytes, 0, info_bytes.length);
-    	
-    	String hex[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-				"A", "B", "C", "D", "E", "F" };
-    	String output="";
-    	byte bt = 0x00;
-    	
-    	for(int i=0; i<info_bytes.length; i++){
-    		/*ASCII*/
-    		if((info_bytes[i] >= '0' && info_bytes[i] <= '9')
-    				|| (info_bytes[i] >= 'a' && info_bytes[i] <= 'z')
-    				|| (info_bytes[i] >= 'A' && info_bytes[i] <= 'Z') 
-    				|| (info_bytes[i] == '$') || (info_bytes[i]=='-') || (info_bytes[i] == '_') 
-    				|| (info_bytes[i] == '.') || (info_bytes[i] == '+') || info_bytes[i] =='!'){
-    			
-    			output = output + "" + (char)info_bytes[i];	
-    		}
-    		else{ /*Hex*/
-    			output = output + "%";
-				bt = (byte) (info_bytes[i] & 0xF0); 
-				bt = (byte) (bt >>> 4); 
-				bt = (byte) (bt & 0x0F); 
-				output = output + (hex[(int) bt]); 
-				bt = (byte) (info_bytes[i] & 0x0F); 
-				output = output + (hex[(int) bt]); 
-    		}
-    	}
-    	return output;
-    	
-    }		
-
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
 		/*Error handling when user enters incorrect number of arguements*/
@@ -71,7 +23,7 @@ public class RUBTClient {
                 String inFileName = args[0];
 		String outFileName = args[1];
 		
-	File torrentFile = new File(inFileName);
+		File torrentFile = new File(inFileName);
         TorrentInfo torrentData = null; 
         /*opens the torrent file or throws an exception if file doesn't exist*/
         try {
@@ -91,12 +43,13 @@ public class RUBTClient {
 		}
         /*prints out the torrent file information. fields are the key value pairs of anounnce, info_hash, etc*/
         ToolKit.print(torrentData.torrent_file_map);
-        sendRequestToTracker(torrentData);
+        byte[] trackerResponse = sendRequestToTracker(torrentData);
         
         extractIP(torrentData.announce_url);
         extractPort(torrentData.announce_url);
         System.out.println("INFO HASH URL IS:" + infoHashToURL(torrentData.info_hash));
-
+        
+        decodeTrackerResponse(trackerResponse);
 
 		
 	}/*end of main method*/
@@ -130,7 +83,7 @@ public class RUBTClient {
    /*This was really helpful for learning about torrents/bittorrent clients
       https://wiki.theory.org/BitTorrentSpecification*/
     /*sends an HTTP GET request to the tracker and creates connection.*/
-    private static void sendRequestToTracker(TorrentInfo tInfo) 
+    private static byte[] sendRequestToTracker(TorrentInfo tInfo) 
     		throws MalformedURLException, IOException, UnknownHostException{
         /*information needed to communicate with the trackers. need to be escaped, write method for that later*/
         /*also not sure if port, uploaded, and downloaded are strings. need to figure out later*/
@@ -145,16 +98,15 @@ public class RUBTClient {
     	    trackerResponse = new byte[requestSize];
     	    trackerStream.readFully(trackerResponse);
     	    trackerStream.close();
-    	    
-    	    System.out.println(trackerResponse.toString());
     	     
     	} catch (IOException e) {
     		System.err.println("Error: " + e.getMessage());
-    		return;
+    		return null;
     	} catch (Exception e) {
     		System.err.println("Error: " + e.getMessage());
-    		return;
+    		return null;
     	}
+		return null;
    
         /*steps:
         * 1. convert the info_hash from the torrentInfo into hex (escaping)
@@ -210,23 +162,66 @@ public class RUBTClient {
             return result;
     }
     
-    /*gets the peer list and other info from the tracker*/
-    private static byte[] captureTrackerResponse(String URL){
-        /* 1. use URL to make a HTTPURLConnection to tracker
-        *  2. store peer list from tracker. the response is a bencoded dictionary
-        */
-        byte[] trackerResponse; 
-        return null;
-        
-    }/*end of captureTrackerResponse*/
+	public static String extractIP(URL url){
+			System.out.println("HOST IS:" + url.getHost());
+			return url.getHost();
+		}
+		
+	public static int extractPort(URL url){
+			System.out.println("PORT IS:" + url.getPort());
+			return url.getPort();
+		}
+		
+	/*
+     * This method takes in an info_hash of type ByteBuffer and returns its string representation.
+     * This algorithm can be found anywhere on the internet.
+     * */
+    @SuppressWarnings("unused")
+	private static String infoHashToURL(ByteBuffer info){
+    	/*Create a byte array out of the values from info*/ 
+    	byte[] info_bytes = new byte[info.capacity()];
+    	info.get(info_bytes, 0, info_bytes.length);
+    	
+    	String hex[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+				"A", "B", "C", "D", "E", "F" };
+    	String output="";
+    	byte bt = 0x00;
+    	
+    	for(int i=0; i<info_bytes.length; i++){
+    		/*ASCII*/
+    		if((info_bytes[i] >= '0' && info_bytes[i] <= '9')
+    				|| (info_bytes[i] >= 'a' && info_bytes[i] <= 'z')
+    				|| (info_bytes[i] >= 'A' && info_bytes[i] <= 'Z') 
+    				|| (info_bytes[i] == '$') || (info_bytes[i]=='-') || (info_bytes[i] == '_') 
+    				|| (info_bytes[i] == '.') || (info_bytes[i] == '+') || info_bytes[i] =='!'){
+    			
+    			output = output + "" + (char)info_bytes[i];	
+    		}
+    		else{ /*Hex*/
+    			output = output + "%";
+				bt = (byte) (info_bytes[i] & 0xF0); 
+				bt = (byte) (bt >>> 4); 
+				bt = (byte) (bt & 0x0F); 
+				output = output + (hex[(int) bt]); 
+				bt = (byte) (info_bytes[i] & 0x0F); 
+				output = output + (hex[(int) bt]); 
+    		}
+    	}
+    	return output;
+    }
+    
     
     /*the tracker responds with a bencoded dictionary as the peer list*/
     /*uses the becoder2 class to decode the dictorary and store the peers in a list*/
-    private static void decodeTrackerResponse(byte[] tracker_response){
-        /*
-            1. store the interval and peers as a list (Have a peer object with peerid, ip, port)
-            2. Make Object o and call beconder2.decode() with tracker response
-            3. You now have all the necessary info for a handshake
-        */
+    private static void decodeTrackerResponse(byte[] tracker_response) throws BencodingException{
+	    /*
+	     	1. Decode the tracker response
+	        3. Make Object o and call beconder2.decode() with tracker response
+	        4. You now have all the necessary info for a handshake
+	    */
+    	Object tResponse = Bencoder2.decode(tracker_response);
+    	System.out.println("TRACKER RESPONSE IS: " + tResponse.toString());
+    	
+    	HashMap<ByteBuffer, Object> responseDictionary;
     }
-}
+}/*end of RUBTClient class*/
