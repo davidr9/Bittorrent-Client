@@ -72,7 +72,7 @@ public class RUBTClient {
 		String outFileName = args[1];
 		
 	File torrentFile = new File(inFileName);
-        TorrentInfo data_in_torrent = null; 
+        TorrentInfo torrentData = null; 
         /*opens the torrent file or throws an exception if file doesn't exist*/
         try {
 			/*If torrentFile is null, then program exits*/
@@ -82,7 +82,7 @@ public class RUBTClient {
 			}
 			
 			/*parses torrent if torrent exists*/
-                        data_in_torrent = torrentParser(torrentFile);
+                        torrentData = torrentParser(torrentFile);
                       
 		} catch (NullPointerException e)
 		{
@@ -90,12 +90,12 @@ public class RUBTClient {
 			return;
 		}
         /*prints out the torrent file information. fields are the key value pairs of anounnce, info_hash, etc*/
-        ToolKit.print(data_in_torrent.torrent_file_map);
-        sendRequestToTracker(data_in_torrent);
+        ToolKit.print(torrentData.torrent_file_map);
+        sendRequestToTracker(torrentData);
         
-        extractIP(data_in_torrent.announce_url);
-        extractPort(data_in_torrent.announce_url);
-        System.out.println("INFO HASH URL IS:" + infoHashToURL(data_in_torrent.info_hash));
+        extractIP(torrentData.announce_url);
+        extractPort(torrentData.announce_url);
+        System.out.println("INFO HASH URL IS:" + infoHashToURL(torrentData.info_hash));
 
 
 		
@@ -127,15 +127,35 @@ public class RUBTClient {
 
         }/*end of torrentParser method*/
 
-    /*This was really helpful for learning about torrents/bittorrent clients
+   /*This was really helpful for learning about torrents/bittorrent clients
       https://wiki.theory.org/BitTorrentSpecification*/
     /*sends an HTTP GET request to the tracker and creates connection.*/
-    private static void sendRequestToTracker(TorrentInfo torrentInfo){
+    private static void sendRequestToTracker(TorrentInfo tInfo) 
+    		throws MalformedURLException, IOException, UnknownHostException{
         /*information needed to communicate with the trackers. need to be escaped, write method for that later*/
         /*also not sure if port, uploaded, and downloaded are strings. need to figure out later*/
-        String info_hash, peer_id, port, uploaded, downloaded, left, event;
-        String oldURL = torrentInfo.announce_url.toString();
-        
+    	URL newURL = createURL(tInfo);
+    	
+    	try {
+    		byte[] trackerResponse;
+    	    HttpURLConnection request = (HttpURLConnection) newURL.openConnection();
+    	    request.setRequestMethod("GET");
+    	    DataInputStream trackerStream = new DataInputStream(request.getInputStream());
+    	    int requestSize = request.getContentLength();
+    	    trackerResponse = new byte[requestSize];
+    	    trackerStream.readFully(trackerResponse);
+    	    trackerStream.close();
+    	    
+    	    System.out.println(trackerResponse.toString());
+    	     
+    	} catch (IOException e) {
+    		System.err.println("Error: " + e.getMessage());
+    		return;
+    	} catch (Exception e) {
+    		System.err.println("Error: " + e.getMessage());
+    		return;
+    	}
+   
         /*steps:
         * 1. convert the info_hash from the torrentInfo into hex (escaping)
         * 2. get port number from info_hash, you can check to see if it's correct with the announce url
@@ -143,13 +163,51 @@ public class RUBTClient {
         * 4. all the tracker request parameters are the above declared variables
         * 5. calls captureTrackerResponse to store the data in a variable
         */
-        HttpURLConnection connection_to_tracker;
         
     }/*end of sendRequest method*/
     
-    /*Converts the info_hash dictionary into hex. This is decoding the SHA1*/
-    private static void escape(byte[] torrent_info){
-        /*need to escape the data from the info_hash*/
+    private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
+    	String workingURL = tInfo.announce_url.toString() + '?';
+    	String escapedInfoHash = escape(tInfo.info_hash.array());
+    	String escapedPeerID = escape("davidrrosheencjulied".getBytes());
+    	String port = Integer.toString(extractPort(tInfo.announce_url));
+    	String left = Integer.toString(tInfo.file_length);
+    	
+    	workingURL = workingURL + "info_hash" + "=" + escapedInfoHash + "&peer_id=" + escapedPeerID + "&port="
+    			+ port + "&uploaded=0&downloaded=0&left=" + left;
+    	
+    	try {
+    		URL finalURL = new URL(workingURL);
+        	return finalURL;
+    	} catch (MalformedURLException e){
+    		System.err.println("Error: " + e.getMessage());
+    		return null;
+    	}
+    }
+    
+    
+    /*Converts into hex. This is decoding the SHA1*/
+    private static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
+            System.out.println("Entering escape()");
+            String result = ""; 
+            char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+            for (int i = 0; i < unEscaped.length; i++) {
+                    if ((unEscaped[i] & 0x80) == 0x080){
+                            byte curr = unEscaped[i];
+                            byte lo = (byte) (curr & 0x0f);
+                            byte hi = (byte) ((curr >> 4) & 0x0f);
+                            result = result + '%' + hexDigits[hi] + hexDigits[lo];
+                    } else {
+                    	try {
+                    		 result = result + URLEncoder.encode(new String(new byte[] {unEscaped[i]}),"UTF-8");
+                    	} catch (UnsupportedEncodingException e) {
+                    		System.out.println("Error: " + e.getMessage());
+                    	}
+                    }         
+            }   
+
+            return result;
     }
     
     /*gets the peer list and other info from the tracker*/
