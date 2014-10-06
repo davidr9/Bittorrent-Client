@@ -49,7 +49,7 @@ public class RUBTClient {
         extractPort(torrentData.announce_url);
         System.out.println("INFO HASH URL IS:" + infoHashToURL(torrentData.info_hash));
         
-        decodeTrackerResponse(trackerResponse);
+        //decodeTrackerResponse(trackerResponse);
 
 		
 	}/*end of main method*/
@@ -106,7 +106,7 @@ public class RUBTClient {
     		System.err.println("Error: " + e.getMessage());
     		return null;
     	}
-		return null;
+		//return null;
    
         /*steps:
         * 1. convert the info_hash from the torrentInfo into hex (escaping)
