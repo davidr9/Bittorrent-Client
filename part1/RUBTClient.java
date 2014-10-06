@@ -10,10 +10,49 @@ public class RUBTClient {
 			return url.getHost();
 		}
 		
-		public static int extractPort(URL url){
+	public static int extractPort(URL url){
 			System.out.println("PORT IS:" + url.getPort());
 			return url.getPort();
 		}
+		
+	/*
+     * This method takes in an info_hash of type ByteBuffer and returns its string representation.
+     * This algorithm can be found anywhere on the internet.
+     * */
+    @SuppressWarnings("unused")
+	private static String infoHashToURL(ByteBuffer info){
+    	/*Create a byte array out of the values from info*/ 
+    	byte[] info_bytes = new byte[info.capacity()];
+    	info.get(info_bytes, 0, info_bytes.length);
+    	
+    	String hex[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+				"A", "B", "C", "D", "E", "F" };
+    	String output="";
+    	byte bt = 0x00;
+    	
+    	for(int i=0; i<info_bytes.length; i++){
+    		/*ASCII*/
+    		if((info_bytes[i] >= '0' && info_bytes[i] <= '9')
+    				|| (info_bytes[i] >= 'a' && info_bytes[i] <= 'z')
+    				|| (info_bytes[i] >= 'A' && info_bytes[i] <= 'Z') 
+    				|| (info_bytes[i] == '$') || (info_bytes[i]=='-') || (info_bytes[i] == '_') 
+    				|| (info_bytes[i] == '.') || (info_bytes[i] == '+') || info_bytes[i] =='!'){
+    			
+    			output = output + "" + (char)info_bytes[i];	
+    		}
+    		else{ /*Hex*/
+    			output = output + "%";
+				bt = (byte) (info_bytes[i] & 0xF0); 
+				bt = (byte) (bt >>> 4); 
+				bt = (byte) (bt & 0x0F); 
+				output = output + (hex[(int) bt]); 
+				bt = (byte) (info_bytes[i] & 0x0F); 
+				output = output + (hex[(int) bt]); 
+    		}
+    	}
+    	return output;
+    	
+    }		
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
@@ -52,6 +91,8 @@ public class RUBTClient {
         
         extractIP(data_in_torrent.announce_url);
         extractPort(data_in_torrent.announce_url);
+        System.out.println("INFO HASH URL IS:" + infoHashToURL(data_in_torrent.info_hash));
+
 
 		
 	}/*end of main method*/
