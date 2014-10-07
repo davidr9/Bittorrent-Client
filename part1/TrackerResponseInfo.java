@@ -87,7 +87,7 @@ public class TrackerResponseInfo {
                         byte[] id = generatePeerID();
 			System.out.println("peerid:" + id.toString());
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
-			int port = (int) (peer1.get(TrackerResponseInfo.PORT));
+			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
 			System.out.println("port is: " + port);
 			Peer currPeer = new Peer(id, ip, port);
 			peerList.add(currPeer);
