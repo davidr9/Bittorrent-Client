@@ -3,6 +3,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /*Like the TorrentInfo class, but for the tracker response*/
 /*Detailed explanation found here: https://wiki.theory.org/BitTorrentSpecification */
@@ -75,6 +76,7 @@ public class TrackerResponseInfo {
 			System.out.println("adding incomplete");
 			this.incomplete = (Integer) tracker_file_map.get(INCOMPLETE);
 		}
+                
 
 		System.out.println("before peers"); 
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)tracker_file_map.get(this.PEERS);
@@ -82,7 +84,7 @@ public class TrackerResponseInfo {
 		
 		for (Map<ByteBuffer, Object> peer1 : peers) {
 			System.out.println("in for");
-			byte[] id = ((ByteBuffer) peer1.get(TrackerResponseInfo.PEERID)).array();
+                        byte[] id = generatePeerID();
 			System.out.println("peerid:" + id.toString());
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
 			int port = (int) (peer1.get(TrackerResponseInfo.PORT));
@@ -92,4 +94,17 @@ public class TrackerResponseInfo {
 		}/*end of for loop*/
 		this.peers = peerList;
 	}
+        
+        private byte[] generatePeerID(){
+            byte[] peerid = new byte[20];
+            peerid[0] = 'R'; peerid[1] = 'U'; peerid[2] = 'B'; peerid[3] = 'T'; peerid[4] = '1';peerid[5] = '1';
+            Random num = new Random(); 
+            String alphanumeric = "0123456789abcdefghijklmnopqrstuvwxABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
+            for(int i = 6; i < peerid.length; i++){
+                char randomChar = alphanumeric.charAt(num.nextInt(alphanumeric.length()));
+                peerid[i] = (byte) randomChar; 
+                
+            }
+            return peerid;
+        }
 }/*end of TrackerResponseInfo class*/
