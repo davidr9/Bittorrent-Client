@@ -53,6 +53,10 @@ public class RUBTClient {
         		connected = singlePeer.connectToPeer();
         	}
         	i++;
+        	if (i == peers.size()){
+        		System.err.println("No peer found with a peer_id beginning with 'RUBT11'");
+        		return;
+        	}
         }
 		
         singlePeer.requestPiecesFromPeer();
@@ -189,13 +193,18 @@ public class RUBTClient {
     /*
      * Returns the first peer whose peer_id prefix is "RUBT11"
      */
-    private static Peer choosePeer(ArrayList<Peer> peers, int start) {
+    private static Peer choosePeer(ArrayList<Peer> peers, int start) throws UnsupportedEncodingException {
 		
-    	for (int i = start ; i < peers.size(); i++){
-    		String id = peers.get(i).peerID.toString();
-    		if (id.startsWith("RUBT11")){
-    			return peers.get(i);
-    		}
+    	try{
+    		for (int i = start ; i < peers.size(); i++){
+        		String id = escape(peers.get(i).peerID);
+        		if (id.startsWith("RUBT11")){
+        			return peers.get(i);
+        		}
+        	}
+    	} catch (UnsupportedEncodingException e){
+    		System.err.println("Error: " + e.getMessage());
+    		return null;
     	}
     	
     	System.err.println("No valid 'RUBT11' peer found in list");
