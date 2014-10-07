@@ -1,3 +1,4 @@
+
 import java.util.*;
 import java.net.*;
 import java.io.*;
@@ -30,11 +31,20 @@ public class Peer {
 		this.clientID = null;
 		
 	}
+	
+	public String getIP(){
+		return this.IPAddress;
+	}
+	
+	public int getPort(){
+		return this.portNum;
+	}
+	
 	/*
 	 * Open a TCP socket on the local machine and contact the peer using the BT peer protocol and request
 	 *  a piece of the file.
 	 */
-	public void requestPieceFromPeer(){
-		return;
+	public boolean requestPieceFromPeer(){
+		return false;
 	}
 }
