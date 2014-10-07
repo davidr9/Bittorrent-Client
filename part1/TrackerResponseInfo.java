@@ -57,7 +57,7 @@ public class TrackerResponseInfo {
 			this.interval = 0;
 		}else{
 			System.out.println("adding interval");
-			this.interval = (int) tracker_file_map.get(INTERVAL);
+			this.interval = (Integer) tracker_file_map.get(INTERVAL);
 		}
 
 		if(!tracker_file_map.containsKey(COMPLETE)){
@@ -65,7 +65,7 @@ public class TrackerResponseInfo {
 			this.complete = 0;
 		}else{
 			System.out.println("adding complete");
-			this.complete = (int) tracker_file_map.get(COMPLETE);
+			this.complete = (Integer) tracker_file_map.get(COMPLETE);
 		}
 
 		if(!tracker_file_map.containsKey(INCOMPLETE)){
@@ -73,7 +73,7 @@ public class TrackerResponseInfo {
 			this.incomplete = 0;
 		}else{
 			System.out.println("adding incomplete");
-			this.incomplete = (int) tracker_file_map.get(INCOMPLETE);
+			this.incomplete = (Integer) tracker_file_map.get(INCOMPLETE);
 		}
 
 		System.out.println("before peers"); 
