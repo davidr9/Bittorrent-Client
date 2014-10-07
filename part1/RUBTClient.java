@@ -98,6 +98,7 @@ public class RUBTClient {
     	    trackerResponse = new byte[requestSize];
     	    trackerStream.readFully(trackerResponse);
     	    trackerStream.close();
+    	    return trackerResponse;
     	     
     	} catch (IOException e) {
     		System.err.println("Error: " + e.getMessage());
@@ -219,9 +220,14 @@ public class RUBTClient {
 	        3. Make Object o and call beconder2.decode() with tracker response
 	        4. You now have all the necessary info for a handshake
 	    */
-    	Object tResponse = Bencoder2.decode(tracker_response);
-    	System.out.println("TRACKER RESPONSE IS: " + tResponse.toString());
-    	
-    	HashMap<ByteBuffer, Object> responseDictionary;
+	            try{
+        TrackerResponseInfo decodedResponse = new TrackerResponseInfo(tracker_response);
+        }catch(BencodingException e) {
+            System.out.println("Tracker Response was not bencoded properly");
+        }catch(IOException e){
+            System.out.println("User Input/Output error ");
+        }catch(Exception e){
+            System.out.println("General exception was caught");
+        }
     }
 }/*end of RUBTClient class*/
