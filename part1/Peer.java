@@ -16,7 +16,11 @@ public class Peer {
 	
 	private final byte[] info_hash; //the info hash of the torrent that this peer is using to communicate
 	
-	private Socket socket; //the socket connecting the local client to this peer
+	private Socket peerSocket; //the socket connecting the local client to this peer
+	
+	private DataOutputStream outputStream;
+	
+	private DataInputStream inputStream;
 	
 	/**
 	 * Creates a new peer object. Actual parameters are yet to be determined
@@ -26,11 +30,11 @@ public class Peer {
 		this.peerID = id;
 		this.portNum = port;
 		this.IPAddress = ip;	
-		this.socket = new Socket(ip, port);
+		this.peerSocket = null;
 		this.info_hash = null;
 		this.clientID = null;
 		
-	}
+	}/*end of Peer class constructor*/
 	
 	public String getIP(){
 		return this.IPAddress;
@@ -44,7 +48,27 @@ public class Peer {
 	 * Open a TCP socket on the local machine and contact the peer using the BT peer protocol and request
 	 *  a piece of the file.
 	 */
-	public boolean requestPieceFromPeer(){
-		return false;
+	public boolean connectToPeer(){
+		try {
+			this.peerSocket = new Socket(this.IPAddress, this.portNum);
+			DataOutputStream outputStream = new DataOutputStream(this.peerSocket.getOutputStream()); // open output stream for outgoing data
+			System.out.println("Data output stream to " + this.peerID + " opened...");
+			DataInputStream inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
+			System.out.println("Data input stream to " + this.peerID + " opened...");
+			return true;
+		}catch (UnknownHostException e) { //catch error for incorrect host name and exit program
+	            System.out.println("Peer " + peerID + " is unknown");
+	            return false;
+	    } catch (IOException e) { //catch error for invalid port and exit program
+	            System.out.println("Connection to " + peerID + " failed");
+	            return false;
+	    }  
+	}/*end of connectToPeer method*/
+	
+	/*
+	 * @params
+	 */
+	public void requestPiecesFromPeer() throws EOFException, IOException{
+		return;
 	}
 }
