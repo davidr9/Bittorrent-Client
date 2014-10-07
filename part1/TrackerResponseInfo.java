@@ -9,16 +9,16 @@ import java.util.Map;
 public class TrackerResponseInfo {
 	/*keys include: failure reason, interval, tracker id, complete, incomplete, peers*/
 	
-	private byte[] tracker_file_bytes;
-	private Map<ByteBuffer, Object> tracker_file_map;
+	public byte[] tracker_file_bytes;
+	public Map<ByteBuffer, Object> tracker_file_map;
         /*time that the client should wait between sending requests to the tracker (sec)*/ 
-	private int interval;
+	public int interval;
         /*A string that the client should send back on it's next announcements*/
-        private String trackerid; 
+        public String trackerid; 
         /*number of peers with the entire file and number of non-seeder peers*/
-        private int complete, incomplete;
+        public int complete, incomplete;
         /*list of Peer objects. Contains the peerid, port, and ip*/
-        private ArrayList<Peer> peers; 
+        public ArrayList<Peer> peers; 
         
 	/*keys to access the hashmap. all of these keys should be in the tracker response*/
 	public final static ByteBuffer INTERVAL = ByteBuffer.wrap(new byte[] {'i', 'n', 't', 'e', 'r', 'v', 'a', 'l'}); 
