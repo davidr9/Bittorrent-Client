@@ -1,27 +1,26 @@
 import java.io.*;
 import java.net.*;
 import java.net.URL.*;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.security.*;
+import java.util.ArrayList;
+import java.nio.*;
 
 public class RUBTClient {
-		
+
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
-		/*Error handling when user enters incorrect number of arguements*/
+		/*Error handling when user enters incorrect number of arguments*/
         if (args.length != 2)
 		{
 			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
 			return;
 		}
 		
-		/*arguement 0 is the torrent and argument 1 is a file that will be sent to server*/
-                String inFileName = args[0];
+		/*argument 0 is the torrent and argument 1 is a file that will be sent to server*/
+        String inFileName = args[0];
 		String outFileName = args[1];
+		boolean connected = false; //true if connected to peer successfully
+		int i = 0;
 		
 		File torrentFile = new File(inFileName);
         TorrentInfo torrentData = null; 
@@ -41,20 +40,19 @@ public class RUBTClient {
 			System.err.println("torrent file cannot be null");
 			return;
 		}
-        /*prints out the torrent file information. fields are the key value pairs of anounnce, info_hash, etc*/
-        ToolKit.print(torrentData.torrent_file_map);
-        byte[] trackerResponse = sendRequestToTracker(torrentData);
         
-        extractIP(torrentData.announce_url);
-        extractPort(torrentData.announce_url);
-        System.out.println("INFO HASH URL IS:" + infoHashToURL(torrentData.info_hash));
+        /*prints out the torrent file information. fields are the key value pairs of announce, info_hash, etc*/
+        ArrayList<Peer> peers = sendRequestToTracker(torrentData);
         
-        //decodeTrackerResponse(trackerResponse);
-
+        while (!connected){
+        	Peer singlePeer = choosePeer(peers, i);
+        	connected = singlePeer.requestPieceFromPeer();
+        	i++;
+        }
 		
 	}/*end of main method*/
 
-    /*parses the data in the torrent file given by the user*/
+	/*parses the data in the torrent file given by the user*/
     private static TorrentInfo torrentParser(File torrentFile) throws BencodingException, FileNotFoundException, IOException{
                 try {
                         FileInputStream torrentStream = new FileInputStream(torrentFile);
@@ -78,15 +76,14 @@ public class RUBTClient {
                         return null;
                 }
 
-        }/*end of torrentParser method*/
+     }/*end of torrentParser method*/
 
-   /*This was really helpful for learning about torrents/bittorrent clients
+    /*This was really helpful for learning about torrents/bittorrent clients
       https://wiki.theory.org/BitTorrentSpecification*/
     /*sends an HTTP GET request to the tracker and creates connection.*/
-    private static byte[] sendRequestToTracker(TorrentInfo tInfo) 
+    private static ArrayList<Peer> sendRequestToTracker(TorrentInfo tInfo) 
     		throws MalformedURLException, IOException, UnknownHostException{
-        /*information needed to communicate with the trackers. need to be escaped, write method for that later*/
-        /*also not sure if port, uploaded, and downloaded are strings. need to figure out later*/
+       
     	URL newURL = createURL(tInfo);
     	
     	try {
@@ -98,8 +95,9 @@ public class RUBTClient {
     	    trackerResponse = new byte[requestSize];
     	    trackerStream.readFully(trackerResponse);
     	    trackerStream.close();
-    	    return trackerResponse;
-    	     
+    	    
+    	    System.out.println(trackerResponse.toString());
+    	    return findPeerList(trackerResponse);
     	} catch (IOException e) {
     		System.err.println("Error: " + e.getMessage());
     		return null;
@@ -107,17 +105,8 @@ public class RUBTClient {
     		System.err.println("Error: " + e.getMessage());
     		return null;
     	}
-		//return null;
-   
-        /*steps:
-        * 1. convert the info_hash from the torrentInfo into hex (escaping)
-        * 2. get port number from info_hash, you can check to see if it's correct with the announce url
-        * 3. figure out how to use java.net.url class to send HTTP request
-        * 4. all the tracker request parameters are the above declared variables
-        * 5. calls captureTrackerResponse to store the data in a variable
-        */
         
-    }/*end of sendRequest method*/
+    }/*end of sendRequestToTracker method*/
     
     private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
     	String workingURL = tInfo.announce_url.toString() + '?';
@@ -136,19 +125,19 @@ public class RUBTClient {
     		System.err.println("Error: " + e.getMessage());
     		return null;
     	}
-    }
+    }/*end of createURL method*/
     
     
     /*Converts into hex. This is decoding the SHA1*/
     private static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
             System.out.println("Entering escape()");
-            String result = ""; 
-            char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+            String result = ""; //empty string to build upon and return
+            char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}; //list of possible hex digits in base 16
 
             for (int i = 0; i < unEscaped.length; i++) {
-                    if ((unEscaped[i] & 0x80) == 0x080){
+                    if ((unEscaped[i] & 0x80) == 0x80){
                             byte curr = unEscaped[i];
-                            byte lo = (byte) (curr & 0x0f);
+                            byte lo = (byte) (curr & 0x0f); 
                             byte hi = (byte) ((curr >> 4) & 0x0f);
                             result = result + '%' + hexDigits[hi] + hexDigits[lo];
                     } else {
@@ -161,56 +150,44 @@ public class RUBTClient {
             }   
 
             return result;
-    }
+    }/*end of escape method*/
     
-	public static String extractIP(URL url){
-			System.out.println("HOST IS:" + url.getHost());
-			return url.getHost();
-		}
-		
-	public static int extractPort(URL url){
-			System.out.println("PORT IS:" + url.getPort());
-			return url.getPort();
-		}
-		
-	/*
-     * This method takes in an info_hash of type ByteBuffer and returns its string representation.
-     * This algorithm can be found anywhere on the internet.
-     * */
-    @SuppressWarnings("unused")
-	private static String infoHashToURL(ByteBuffer info){
-    	/*Create a byte array out of the values from info*/ 
-    	byte[] info_bytes = new byte[info.capacity()];
-    	info.get(info_bytes, 0, info_bytes.length);
-    	
-    	String hex[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-				"A", "B", "C", "D", "E", "F" };
-    	String output="";
-    	byte bt = 0x00;
-    	
-    	for(int i=0; i<info_bytes.length; i++){
-    		/*ASCII*/
-    		if((info_bytes[i] >= '0' && info_bytes[i] <= '9')
-    				|| (info_bytes[i] >= 'a' && info_bytes[i] <= 'z')
-    				|| (info_bytes[i] >= 'A' && info_bytes[i] <= 'Z') 
-    				|| (info_bytes[i] == '$') || (info_bytes[i]=='-') || (info_bytes[i] == '_') 
-    				|| (info_bytes[i] == '.') || (info_bytes[i] == '+') || info_bytes[i] =='!'){
-    			
-    			output = output + "" + (char)info_bytes[i];	
+    /*
+     * Returns the list of peers generated from the tracker as an array list 
+     */
+    private static ArrayList<Peer> findPeerList(byte[] tracker_response) throws BencodingException{
+        
+    		TrackerResponseInfo trackerData = new TrackerResponseInfo(tracker_response);
+    		ArrayList<Peer> peers = trackerData.peers;
+    		if (peers.isEmpty()){
+    			throw new NullPointerException("List of peers is empty");
     		}
-    		else{ /*Hex*/
-    			output = output + "%";
-				bt = (byte) (info_bytes[i] & 0xF0); 
-				bt = (byte) (bt >>> 4); 
-				bt = (byte) (bt & 0x0F); 
-				output = output + (hex[(int) bt]); 
-				bt = (byte) (info_bytes[i] & 0x0F); 
-				output = output + (hex[(int) bt]); 
+    		
+    		return peers;
+           // 1. store the interval and peers as a list (Have a peer object with peerid, ip, port)
+           //2. Make Object o and call beconder2.decode() with tracker response
+           //3. You now have all the necessary info for a handshake
+    }/*end of findPeerList method*/
+    
+    /*
+     * Returns the first peer whose peer_id prefix is "RUBT11"
+     */
+    private static Peer choosePeer(ArrayList<Peer> peers, int start) {
+		
+    	for (int i = start ; i < peers.size(); i++){
+    		String id = peers.get(i).peerID.toString();
+    		if (id.startsWith("RUBT11")){
+    			return peers.get(i);
     		}
     	}
-    	return output;
-    }
+    	
+    	System.err.println("No valid 'RUBT11' peer found in list");
+		return null;
+	}/*end of choosePeer method*/
     
+    public static int extractPort(URL url){
+		return url.getPort();
+	}
     
     /*the tracker responds with a bencoded dictionary as the peer list*/
     /*uses the becoder2 class to decode the dictorary and store the peers in a list*/
@@ -220,14 +197,12 @@ public class RUBTClient {
 	        3. Make Object o and call beconder2.decode() with tracker response
 	        4. You now have all the necessary info for a handshake
 	    */
-	            try{
-        TrackerResponseInfo decodedResponse = new TrackerResponseInfo(tracker_response);
+	    try{
+	    	TrackerResponseInfo decodedResponse = new TrackerResponseInfo(tracker_response);
         }catch(BencodingException e) {
             System.out.println("Tracker Response was not bencoded properly");
-        }catch(IOException e){
-            System.out.println("User Input/Output error ");
         }catch(Exception e){
             System.out.println("General exception was caught");
         }
-    }
-}/*end of RUBTClient class*/
+	}/*end of RUBTClient class*/
+}
