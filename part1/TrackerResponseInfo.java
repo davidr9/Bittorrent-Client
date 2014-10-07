@@ -83,12 +83,9 @@ public class TrackerResponseInfo {
 		ArrayList<Peer> peerList = new ArrayList<Peer>();
 		
 		for (Map<ByteBuffer, Object> peer1 : peers) {
-			System.out.println("in for");
                         byte[] id = generatePeerID();
-			System.out.println("peerid:" + id.toString());
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
 			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
-			System.out.println("port is: " + port);
 			Peer currPeer = new Peer(id, ip, port);
 			peerList.add(currPeer);
 		}/*end of for loop*/
