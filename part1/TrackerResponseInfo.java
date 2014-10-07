@@ -81,6 +81,7 @@ public class TrackerResponseInfo {
                     String ip = list_of_peers.get(i).get(IP).toString();
                     int port = (int) list_of_peers.get(i).get(PORT);
                     Peer currPeer = new Peer(peerid, ip, port);
+                    peers.add(currPeer);
                 }
 		
 	}
