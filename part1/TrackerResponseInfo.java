@@ -67,10 +67,8 @@ public class TrackerResponseInfo {
 		}
 
 		if(!tracker_file_map.containsKey(INTERVAL)){
-			System.out.println("Interval is null");
 			this.interval = 0;
 		}else{
-			System.out.println("adding interval");
 			this.interval = (Integer) tracker_file_map.get(INTERVAL);
 		}
 
@@ -78,20 +76,15 @@ public class TrackerResponseInfo {
 			System.out.println("There are no peers with the entire file");
 			this.complete = 0;
 		}else{
-			System.out.println("adding complete");
 			this.complete = (Integer) tracker_file_map.get(COMPLETE);
 		}
 
 		if(!tracker_file_map.containsKey(INCOMPLETE)){
-			System.out.println("There are no non-seeder pairs");
 			this.incomplete = 0;
 		}else{
-			System.out.println("adding incomplete");
 			this.incomplete = (Integer) tracker_file_map.get(INCOMPLETE);
 		}
                 
-
-		System.out.println("before peers");
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)tracker_file_map.get(this.PEERS);
 		ArrayList<Peer> peerList = new ArrayList<Peer>();
 		
