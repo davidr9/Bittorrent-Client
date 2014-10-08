@@ -22,17 +22,19 @@ public class Peer {
 	
 	private DataInputStream inputStream;
 	
+	private Message peerMessage = null;
+	
 	/**
 	 * Creates a new peer object. Actual parameters are yet to be determined
 	 * @param args
 	 */
-	public Peer (byte[] id, String ip, int port) throws UnknownHostException, IOException{
+	public Peer (byte[] id, String ip, int port, byte[] cid) throws UnknownHostException, IOException{
 		this.peerID = id;
 		this.portNum = port;
 		this.IPAddress = ip;	
 		this.peerSocket = null;
 		this.info_hash = null;
-		this.clientID = null;
+		this.clientID = cid;
 		
 	}/*end of Peer class constructor*/
 	
@@ -45,16 +47,15 @@ public class Peer {
 	}
 	
 	/*
-	 * Open a TCP socket on the local machine and contact the peer using the BT peer protocol and request
-	 *  a piece of the file.
+	 * Open a TCP socket on the local machine and contact the peer using the BT peer protocol
 	 */
 	public boolean connectToPeer(){
 		try {
 			this.peerSocket = new Socket(this.IPAddress, this.portNum);
-			DataOutputStream outputStream = new DataOutputStream(this.peerSocket.getOutputStream()); // open output stream for outgoing data
-			System.out.println("Data output stream to " + this.peerID + " opened...");
-			DataInputStream inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
-			System.out.println("Data input stream to " + this.peerID + " opened...");
+			this.outputStream = new DataOutputStream(this.peerSocket.getOutputStream()); // open output stream for outgoing data
+			System.out.println("Data output stream for " + RUBTClient.escape(this.peerID) + " opened...");
+			this.inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
+			System.out.println("Data input stream for " + RUBTClient.escape(this.peerID) + " opened...");
 			return true;
 		}catch (UnknownHostException e) { //catch error for incorrect host name and exit program
 	            System.out.println("Peer " + peerID + " is unknown");
@@ -70,5 +71,9 @@ public class Peer {
 	 */
 	public void requestPiecesFromPeer() throws EOFException, IOException{
 		return;
+	}
+	
+	public int shakeHand(){
+		return -1;
 	}
 }
