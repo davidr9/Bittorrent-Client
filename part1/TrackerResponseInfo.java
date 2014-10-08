@@ -5,23 +5,33 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-/*Like the TorrentInfo class, but for the tracker response*/
-/*Detailed explanation found here: https://wiki.theory.org/BitTorrentSpecification */
+/**
+ * @author Julie Duncan
+ * @author David Rubin
+ * @author Rosheen Chaudhry
+ */
+
+/*Similar to the TorrentInfo class, but for the tracker response*/
 public class TrackerResponseInfo {
 	/*keys include: failure reason, interval, tracker id, complete, incomplete, peers*/
 
 	public byte[] tracker_file_bytes;
+	
 	public Map<ByteBuffer, Object> tracker_file_map;
+	
 	/*time that the client should wait between sending requests to the tracker (sec)*/ 
 	public int interval;
+	
 	/*A string that the client should send back on it's next announcements*/
 	public String trackerid; 
+	
 	/*number of peers with the entire file and number of non-seeder peers*/
 	public int complete, incomplete;
-	/*list of Peer objects. Contains the peerid, port, and ip*/
+	
+	/*Array list of Peer objects. Contains the peerid, port, and ip for each*/
 	public ArrayList<Peer> peers; 
 
-	/*keys to access the hashmap. all of these keys should be in the tracker response*/
+	/*Keys to access the hash map. All of these keys should be in the tracker response*/
 	public final static ByteBuffer INTERVAL = ByteBuffer.wrap(new byte[] {'i', 'n', 't', 'e', 'r', 'v', 'a', 'l'}); 
 
 	public final static ByteBuffer FAILURE_REASON = ByteBuffer.wrap(new byte[] {'f', 'a', 'i', 'l', 'u', 'r', 'e'});
@@ -40,6 +50,9 @@ public class TrackerResponseInfo {
 
 	public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]{'p', 'o', 'r', 't'});
 
+	/*TrackerResponseInfo constructor
+	 * @param = tracker data in byte array
+	 */
 	public TrackerResponseInfo (byte[] tracker_file_bytes) throws BencodingException, IOException{
 		if(tracker_file_bytes == null || tracker_file_bytes.length == 0)
 		{
@@ -84,7 +97,7 @@ public class TrackerResponseInfo {
 		
 		for (Map<ByteBuffer, Object> peer1 : peers) {
 		
-            byte[] id = generatePeerID();
+			byte[] id = ((ByteBuffer) peer1.get(TrackerResponseInfo.PEERID)).array();
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
 			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
 			Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID, RUBTClient.torrentData.info_hash.array());
@@ -92,17 +105,16 @@ public class TrackerResponseInfo {
 		}/*end of for loop*/
 		this.peers = peerList;
 	}
-        
-        private byte[] generatePeerID(){
-            byte[] peerid = new byte[20];
-            peerid[0] = 'R'; peerid[1] = 'U'; peerid[2] = 'B'; peerid[3] = 'T'; peerid[4] = '1';peerid[5] = '1';
-            Random num = new Random(); 
-            String alphanumeric = "0123456789abcdefghijklmnopqrstuvwxABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
-            for(int i = 6; i < peerid.length; i++){
-                char randomChar = alphanumeric.charAt(num.nextInt(alphanumeric.length()));
-                peerid[i] = (byte) randomChar; 
-                
-            }
-            return peerid;
+    /*    
+	private byte[] generatePeerID(){
+		byte[] peerid = new byte[20];
+        peerid[0] = 'R'; peerid[1] = 'U'; peerid[2] = 'B'; peerid[3] = 'T'; peerid[4] = '1';peerid[5] = '1';
+        Random num = new Random(); 
+        String alphanumeric = "0123456789abcdefghijklmnopqrstuvwxABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
+        for(int i = 6; i < peerid.length; i++){
+            char randomChar = alphanumeric.charAt(num.nextInt(alphanumeric.length()));
+            peerid[i] = (byte) randomChar;              
         }
+            return peerid;
+     }*/
 }/*end of TrackerResponseInfo class*/
