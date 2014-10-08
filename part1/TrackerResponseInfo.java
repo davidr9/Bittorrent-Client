@@ -78,15 +78,16 @@ public class TrackerResponseInfo {
 		}
                 
 
-		System.out.println("before peers"); 
+		System.out.println("before peers");
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)tracker_file_map.get(this.PEERS);
 		ArrayList<Peer> peerList = new ArrayList<Peer>();
 		
 		for (Map<ByteBuffer, Object> peer1 : peers) {
-                        byte[] id = generatePeerID();
+		
+            byte[] id = generatePeerID();
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
 			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
-			Peer currPeer = new Peer(id, ip, port);
+			Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID);
 			peerList.add(currPeer);
 		}/*end of for loop*/
 		this.peers = peerList;
