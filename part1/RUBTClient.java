@@ -8,6 +8,7 @@ import java.nio.*;
 public class RUBTClient {
 	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes();
+        public static TorrentInfo torrentData = null;
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
@@ -25,7 +26,6 @@ public class RUBTClient {
 		int i = 0;
 		
 		File torrentFile = new File(inFileName);
-        TorrentInfo torrentData = null; 
         /*opens the torrent file or throws an exception if file doesn't exist*/
         try {
 			/*If torrentFile is null, then program exits*/
