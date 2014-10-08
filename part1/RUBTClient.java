@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.nio.*;
 
 public class RUBTClient {
+	
+	public static byte[] clientID = "davidrrosheencjulied".getBytes();
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 	
@@ -53,7 +55,7 @@ public class RUBTClient {
         		connected = singlePeer.shakeHand();
         	}
         	i++;
-        	if (i > peers.size()){
+        	if (i == peers.size()){ 
         		System.err.println("No valid peer found");
         		return;
         	}
@@ -122,7 +124,7 @@ public class RUBTClient {
     private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
     	String workingURL = tInfo.announce_url.toString() + '?';
     	String escapedInfoHash = escape(tInfo.info_hash.array());
-    	String escapedPeerID = escape("davidrrosheencjulied".getBytes());
+    	String escapedPeerID = escape(clientID);
     	String port = Integer.toString(extractPort(tInfo.announce_url));
     	String left = Integer.toString(tInfo.file_length);
     	
