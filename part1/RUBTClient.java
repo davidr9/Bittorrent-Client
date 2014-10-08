@@ -19,7 +19,7 @@ public class RUBTClient {
 		/*argument 0 is the torrent and argument 1 is a file that will be sent to server*/
         String inFileName = args[0];
 		String outFileName = args[1];
-		boolean connected = false; //true if connected to peer successfully
+		int connected = -1; //0 if connected to peer successfully, -1 otherwise
 		int i = 0;
 		
 		File torrentFile = new File(inFileName);
@@ -47,14 +47,14 @@ public class RUBTClient {
         ArrayList<Peer> peers = sendRequestToTracker(torrentData);
         Peer singlePeer = null;
         
-        while (!connected){
-        	singlePeer = choosePeer(peers, i);
+        while (connected != 0){
+        	singlePeer = peers.get(i);
         	if (singlePeer != null){
-        		connected = singlePeer.connectToPeer();
+        		connected = singlePeer.shakeHand();
         	}
         	i++;
-        	if (i == peers.size()){
-        		System.err.println("No peer found with a peer_id beginning with 'RUBT11'");
+        	if (i > peers.size()){
+        		System.err.println("No valid peer found");
         		return;
         	}
         }
@@ -140,8 +140,7 @@ public class RUBTClient {
     
     
     /*Converts into hex. This is decoding the SHA1*/
-    private static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
-            System.out.println("Entering escape()");
+    public static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
             String result = ""; //empty string to build upon and return
             char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}; //list of possible hex digits in base 16
 
