@@ -13,10 +13,11 @@ import java.util.Random;
 
 /*Similar to the TorrentInfo class, but for the tracker response*/
 public class TrackerResponseInfo {
-	/*keys include: failure reason, interval, tracker id, complete, incomplete, peers*/
 
+	/*byte array of tracker response*/
 	public byte[] tracker_file_bytes;
 	
+	/*hashmp of key/value pairs of tracker response*/
 	public Map<ByteBuffer, Object> tracker_file_map;
 	
 	/*time that the client should wait between sending requests to the tracker (sec)*/ 
@@ -54,6 +55,7 @@ public class TrackerResponseInfo {
 	 * @param = tracker data in byte array
 	 */
 	public TrackerResponseInfo (byte[] tracker_file_bytes) throws BencodingException, IOException{
+		/*checks if tracker does not return a valid response*/
 		if(tracker_file_bytes == null || tracker_file_bytes.length == 0)
 		{
 			throw new IllegalArgumentException("Tracker response can't be 0 bytes"); 
@@ -62,6 +64,7 @@ public class TrackerResponseInfo {
 		this.tracker_file_bytes = tracker_file_bytes; 
 		this.tracker_file_map = (Map<ByteBuffer,Object>)Bencoder2.decode(tracker_file_bytes);
 
+		/*All if statements update the class variables if key is present in hashmap*/
 		if(tracker_file_map.containsKey(FAILURE_REASON)){
 			throw new BencodingException("No keys present from tracker");
 		}
@@ -88,6 +91,8 @@ public class TrackerResponseInfo {
 		ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>)tracker_file_map.get(this.PEERS);
 		ArrayList<Peer> peerList = new ArrayList<Peer>();
 		
+		/*Goes through list of peers in hashmap to get peerid, peerip, and port number
+		  Stores the values in an arraylist of Peer objects*/
 		for (Map<ByteBuffer, Object> peer1 : peers) {
 		
 			byte[] id = ((ByteBuffer) peer1.get(TrackerResponseInfo.PEERID)).array();
@@ -98,6 +103,8 @@ public class TrackerResponseInfo {
 		}/*end of for loop*/
 		this.peers = peerList;
 	}
+	
+	/*method to randomly generate peerid, not sure if necessary*/
     /*    
 	private byte[] generatePeerID(){
 		byte[] peerid = new byte[20];
