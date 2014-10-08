@@ -87,7 +87,7 @@ public class TrackerResponseInfo {
             byte[] id = generatePeerID();
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
 			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
-			Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID);
+			Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID, RUBTClient.torrentData.info_hash.array());
 			peerList.add(currPeer);
 		}/*end of for loop*/
 		this.peers = peerList;
