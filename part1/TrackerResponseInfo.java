@@ -96,10 +96,13 @@ public class TrackerResponseInfo {
 		for (Map<ByteBuffer, Object> peer1 : peers) {
 		
 			byte[] id = ((ByteBuffer) peer1.get(TrackerResponseInfo.PEERID)).array();
+                        int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
 			String ip = new String(((ByteBuffer) peer1.get(TrackerResponseInfo.IP)).array());
-			int port = (Integer) (peer1.get(TrackerResponseInfo.PORT));
-			Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID, RUBTClient.torrentData.info_hash.array());
-			peerList.add(currPeer);
+                        /*only adds peers with these IP addresses to arraylist*/
+                        if(ip.equals("128.6.171.130") || ip.equals("128.6.171.131")){
+                            Peer currPeer = new Peer(id, ip, port, RUBTClient.clientID, RUBTClient.torrentData.info_hash.array());
+                            peerList.add(currPeer);
+                        }
 		}/*end of for loop*/
 		this.peers = peerList;
 	}
