@@ -79,18 +79,20 @@ public class Message {
 			
 			/* load the SHA has into its part of the handshake array.*/
 			int j=0;
-			for(int i = 28; i<info_hash.length; i++){
+			int len = 28 + info_hash.length; 
+			for(int i = 28; i<len; i++){
 				handshake[i] = info_hash[j];
 				j++;				
 			}
 
 			/* load the peer_id into its part of the handshake*/
 			int p=0;
+			len = 48 + peer_id.length;
 			for(int i = 48; i<peer_id.length; i++){
 				handshake[i] = info_hash[p];
 				p++;				
 			}
-			
+		
 			return handshake;
 		}
 
