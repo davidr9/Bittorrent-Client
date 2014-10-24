@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  * @author Rosheen Chaudhry
  */
 
-public class Peer {
+public class Peer extends Thread implements Runnable{
 
 	byte[] peerID; /*the id of this peer*/
 	
@@ -55,13 +55,13 @@ public class Peer {
 	/*
 	 * Open a TCP socket on the local machine to contact the peer using the BT peer protocol
 	 */
-	public boolean connectToPeer(){
+	public boolean openSocket(){
 		try {
 			this.peerSocket = new Socket(this.IPAddress, this.portNum);
 			this.outputStream = new DataOutputStream(this.peerSocket.getOutputStream()); // open output stream for outgoing data
-			System.out.println("Data output stream for " + RUBTClient.escape(this.peerID) + " opened...");
+			System.out.println("Data output stream for " + this.IPAddress + " opened...");
 			this.inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
-			System.out.println("Data input stream for " + RUBTClient.escape(this.peerID) + " opened...");
+			System.out.println("Data input stream for " + this.IPAddress + " opened...");
 			return true;
 		}catch (UnknownHostException e) { //catch error for incorrect host name and exit program
 	            System.out.println("Peer " + peerID + " is unknown");
@@ -70,7 +70,7 @@ public class Peer {
 	            System.out.println("Connection to " + peerID + " failed");
 	            return false;
 	    }  
-	}/*end of connectToPeer method*/
+	}/*end of openSocket method*/
 	
 	/*
 	 * @params
@@ -95,15 +95,14 @@ public class Peer {
 		if(this.clientID == null){
 			/* Missing clientID */
 			System.err.println("ClientID is missing; could not complete handshake");
-			peerSocket.close();
 			return -1;
 		}
 		
 		/*open the socket*/
-		if(!this.connectToPeer()){
+		if(!this.openSocket()){
 			/* Connection unsuccessful*/
 			System.err.println("Peer connection unsuccesful. Cannot complete handshake");
-			peerSocket.close();
+			this.peerSocket.close();
 			return -1;
 		}
 		
@@ -128,12 +127,12 @@ public class Peer {
 		} catch (SocketException e) {
 			System.err.println("TIMEOUT");
 			e.printStackTrace();
-			peerSocket.close();
+			this.peerSocket.close();
 			return -1;
 		} catch (IOException e) {
 			System.err.println("COULD NOT WRITE HANDSHAKE INFO");
 			e.printStackTrace();
-			peerSocket.close();
+			this.peerSocket.close();
 			return -1;
 		}
 		
@@ -154,8 +153,8 @@ public class Peer {
 	    /*Check if info hash matches*/
 	    for (int i = 28; i < 48; i++){
 	      if (handshake_info[i] != complete_handshake[i]) {
-	        System.err.println("INFO HASH ID NOT MATCH");
-	        peerSocket.close();
+	        System.err.println("INFO HASH DID NOT MATCH");
+	        this.peerSocket.close();
 	        return -1;
 	      }
 	    }
@@ -166,20 +165,20 @@ public class Peer {
 	      for (int i = 48; i < 68; i++)
 	        if (complete_handshake[i] != peer_id_array[i - 48]) {
 	          System.err.println("PEERID DID NOT MATCH");
-	          peerSocket.close();
+	          this.peerSocket.close();
 	          return -1;
 	        }
 	      
 		} else if (this.peerID != null && this.peerID.length != 20) {
 	      System.err.println("PEERID LENGTH IS INCORRECT");
 	      this.peerID = new byte[20];
-	      peerSocket.close();
+	      this.peerSocket.close();
 	      /*System.arraycopy(complete_handshake, 48, this.peerID, 0, 20);*/
 	      return -1;
 
 	    } else {
 	    	System.err.println("NO PEER ID ");
-	    	peerSocket.close();
+	    	this.peerSocket.close();
 	    }
 
 		System.out.println("HANDSHAKE COMPLETE");
