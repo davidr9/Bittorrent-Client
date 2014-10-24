@@ -38,8 +38,14 @@ public class Message {
 		/* have: <length prefix> is 5 and message ID is 4. The payload is a zero-based index of the piece that has just been downloaded and verified.*/
 		public static final byte have = 4;
 		
-		/* request: <length prefix> is 13 and message ID is 6. The payload is as follows: */
+		/*request: <length prefix> is 13 and message ID is 6. The payload is as follows: */
 		public static final byte request = 6;
+
+		/*bitfield: <length prefix> is 1 + X (X is pices/8) and message ID is 5*/
+		public static final byte bitfield = 5;
+
+		/*piece: <length prefix> is 9 + x and message ID 7*/
+		public static final byte piece = 7;
 
 		
 		/* length prefix is a 4-byte big-endian value and message ID is a single byte.*/
