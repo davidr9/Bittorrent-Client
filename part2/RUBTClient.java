@@ -15,6 +15,14 @@ public class RUBTClient {
 
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
+	public static int interval = 0; 
+	/*the following variables need to be published by the interval*/
+	public static int uploaded = 0;
+	public static int downloaded = 0;
+	public static int left = 0;
+	public static int completed = 0;
+	public static int started = 0;
+	public static int stopped = 0;
 
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
 
@@ -48,9 +56,6 @@ public class RUBTClient {
 			return;
 		}
 
-
-
-		//This is wrong
 		ArrayList<Peer> peers = new ArrayList<Peer>(); /*List of peers received from the tracker*/
 		peers = sendRequestToTracker(torrentData);
 		Peer singlePeer = null; /*for communication with one peer*/
@@ -231,5 +236,17 @@ public class RUBTClient {
 	public static int extractPort(URL url){
 		return url.getPort();
 	}
+
+	/*Prints the connection information to the tracker*/
+	public static void publishTrackerInfo()
+	{
+		System.out.println("Uploaded: " + uploaded);
+		System.out.println("Downloaded: " + downloaded);
+		System.out.println("Left: " + left); 
+		System.out.println("Completed: " + completed);
+		System.out.println("Started: " + started);
+		System.out.println("Stopped: " + stopped);
+	}/*end of publishTrackerInfo*/
+
 
 }/*end of RUBTClient class*/
