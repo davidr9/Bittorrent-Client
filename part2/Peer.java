@@ -31,6 +31,9 @@ public class Peer extends Thread implements Runnable{
 	private boolean hand_shook = false; /*true if handshake with peer is completes successfully*/
 	
 	private Thread th;
+	
+	private String tName;
+	
 	/**
 	 * Creates a new peer object
 	 * 
@@ -207,6 +210,20 @@ public class Peer extends Thread implements Runnable{
 	}
 	
 	/*
+	 * Creates new thread for Runnable Peer and starts it
+	 * 
+	 * @throws UnsupportedEncodingException for escape 
+	 */
+	public void startThread() throws UnsupportedEncodingException{
+		
+		if (th == null){
+			tName = RUBTClient.escape(peerID);
+			th = new Thread(this, tName);
+			th.start();
+		}
+	}
+	
+	/*
 	 * Run function for peer threads.
 	 * 
 	 * Creates new thread with peerID as thread name. Begins downloading pieces from
@@ -214,13 +231,19 @@ public class Peer extends Thread implements Runnable{
 	 */
 	public void run(){
 		
-		String tName;
+		System.out.println("Thread " + tName + " has begun running");
+		int connected;
 		
-		try {
-			tName = RUBTClient.escape(this.peerID);
-			th = new Thread(this, tName);
-			System.out.println("Thread " + tName + " has begun running");
-			downloadPieces();
+		try {	
+			
+			connected = shakeHand();
+			if (connected == -1){
+				System.err.print("Could not connect with peer " + tName);
+				System.err.println(". Some pieces of the file to download may be lost.");
+			} else {
+				downloadPieces();
+			}
+			
 		} catch (UnsupportedEncodingException e) {
 			System.err.println(e.getMessage());
 			return;
