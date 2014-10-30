@@ -36,8 +36,10 @@ public class RUBTClient extends Thread{
 	
 	private static List<Peer> connectedPeers;
 	
+	private static long beginTime;
+	
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
-
+		
 		/*Error handling when user enters incorrect number of arguments*/
         if (args.length != 2)
 		{
@@ -47,8 +49,6 @@ public class RUBTClient extends Thread{
 		
         String inFileName = args[0]; /*torrent file*/
 		String outFileName = args[1]; /*file to output successful download to*/
-		int connected = -1; /*0 if connected to peer successfully, -1 otherwise*/
-		int i = 0;
 		
 		File torrentFile = new File(inFileName); /*torrent file stream*/
 		
@@ -59,18 +59,17 @@ public class RUBTClient extends Thread{
 				System.err.println("Torrent file does not exist");
 				return;
 			}
-			
 			/*parses torrent if torrent exists*/
-            torrentData = torrentParser(torrentFile);
-                      
+            torrentData = torrentParser(torrentFile);             
 		} catch (NullPointerException e)
 		{
 			System.err.println("Cannot proceed if torrent file is null");
 			return;
 		}
         
-        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/
+        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
         connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
+        
         
 	}/*end of main method*/
 
@@ -242,9 +241,13 @@ public class RUBTClient extends Thread{
     	
     	int connected = 0;
     	
+    	beginTime = System.nanoTime(); /*This is where we will begin to time the download*/
+    	
     	for (int i = 0; i < connectedPeers.size(); i++){
 				connected = connectedPeers.get(i).shakeHand();
-				if (connected == -1){
+				if (connected == 0){
+					connectedPeers.get(i).start();
+				} else {
 					System.err.print("Could not connect with peer at " + peers.get(i).getIP());
 					System.err.println(". Some pieces of the file to download may be lost.");
 				}
@@ -261,5 +264,7 @@ public class RUBTClient extends Thread{
 		System.out.println("Started: " + started);
 		System.out.println("Stopped: " + stopped);
 	}/*end of publishTrackerInfo*/
+	
+	
 	
 }/*end of RUBTClient class*/
