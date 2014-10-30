@@ -30,9 +30,15 @@ public class Peer extends Thread implements Runnable{
 	
 	private boolean hand_shook = false; /*true if handshake with peer is completes successfully*/
 	
+	private Thread th;
 	/**
-	 * Creates a new peer object. Actual parameters are yet to be determined
-	 * @param args
+	 * Creates a new peer object
+	 * 
+	 * @param id byte array containing id of peer
+	 * @param ip IP address of peer
+	 * @param port port number through which to communicate with peer
+	 * @param cid ID of local client host
+	 * @param info_hash info hash being used to communicate with peer
 	 */
 	public Peer (byte[] id, String ip, int port, byte[] cid, byte[] info_hash) throws UnknownHostException, IOException{
 		this.peerID = id;
@@ -44,16 +50,28 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of Peer class constructor*/
 	
+	/*
+	 * Find private variable IP address
+	 * 
+	 * @return IP address of peer as string
+	 */
 	public String getIP(){
 		return this.IPAddress;
 	}
 	
+	/*
+	 * Find private variable port number
+	 * 
+	 * @return port number as integer
+	 */
 	public int getPort(){
 		return this.portNum;
 	}
 	
 	/*
-	 * Open a TCP socket on the local machine to contact the peer using the BT peer protocol
+	 * Open a TCP socket on the local machine to contact the peer using the TCP peer protocol
+	 * 
+	 * @return true if success, false otherwise
 	 */
 	public boolean openSocket(){
 		try {
@@ -71,18 +89,14 @@ public class Peer extends Thread implements Runnable{
 	            return false;
 	    }  
 	}/*end of openSocket method*/
-	
-	/*
-	 * @params
-	 */
-	public void requestPiecesFromPeer() throws EOFException, IOException{
-		return;
-	}
-	
+
 	/* 
-	 * Handshake
-	 * Return -1 if handshake is unsuccessful for any reason
-	 * Returns 0 if successful 
+	 * This method sends a Handshake to the peer. It checks the peers response for
+	 * a matching peerID and info hash
+	 * 
+	 * @throws IOException and SocketException if error is detected
+	 * @return 0 if successful 
+	 * @return -1 if handshake is unsuccessful for any reason
 	 */
 	public int shakeHand() throws IOException, SocketException{
 		
@@ -184,5 +198,41 @@ public class Peer extends Thread implements Runnable{
 		System.out.println("HANDSHAKE COMPLETE");
 		
 		return 0;
+	}
+	
+	/*
+	 * Downloads all pieces from this peer that we have not already downloaded.
+	 */
+	private void downloadPieces() throws EOFException, IOException{
+	}
+	
+	/*
+	 * Run function for peer threads.
+	 * 
+	 * Creates new thread with peerID as thread name. Begins downloading pieces from
+	 * thread, then closes socket and all streams when finished.
+	 */
+	public void run(){
+		
+		String tName;
+		
+		try {
+			tName = RUBTClient.escape(this.peerID);
+			th = new Thread(this, tName);
+		} catch (UnsupportedEncodingException e) {
+			System.err.println(e.getMessage());
+			return;
+		}
+		
+		System.out.println("Thread " + tName + " has begun running");
+		downloadPieces();
+		
+		try {
+			inputStream.close();
+			outputStream.close();
+			peerSocket.close();
+		} catch (Exception e){
+			System.err.println(e.getMessage());
+		}
 	}
 }
