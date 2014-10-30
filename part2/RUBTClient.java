@@ -244,13 +244,7 @@ public class RUBTClient extends Thread{
     	beginTime = System.nanoTime(); /*This is where we will begin to time the download*/
     	
     	for (int i = 0; i < connectedPeers.size(); i++){
-				connected = connectedPeers.get(i).shakeHand();
-				if (connected == 0){
-					connectedPeers.get(i).start();
-				} else {
-					System.err.print("Could not connect with peer at " + peers.get(i).getIP());
-					System.err.println(". Some pieces of the file to download may be lost.");
-				}
+				connectedPeers.get(i).startThread();
 		}
     } /*end of connectToPeers method*/
     
