@@ -219,13 +219,18 @@ public class Peer extends Thread implements Runnable{
 		try {
 			tName = RUBTClient.escape(this.peerID);
 			th = new Thread(this, tName);
+			System.out.println("Thread " + tName + " has begun running");
+			downloadPieces();
 		} catch (UnsupportedEncodingException e) {
 			System.err.println(e.getMessage());
 			return;
+		} catch (EOFException e) {
+			e.printStackTrace();
+			return;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
 		}
-		
-		System.out.println("Thread " + tName + " has begun running");
-		downloadPieces();
 		
 		try {
 			inputStream.close();
