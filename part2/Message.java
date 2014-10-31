@@ -7,6 +7,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 /*
  * A class represented as a stream of bytes to communicate messages between peers
  */
@@ -49,7 +50,7 @@ public class Message {
 
 		/*piece: <length prefix> is 9 + x and message ID 7*/
 		public static final byte piece = 7;
-                
+		                
                 byte[] messageSent = null;
                 
                 byte[] messageRecieved = null; 
@@ -67,6 +68,14 @@ public class Message {
 		public Message(int length_prefix, byte message_id){
 			this.length = length_prefix;
 			this.message_id = message_id;
+		}
+		
+		public byte getID(){
+			return this.message_id;
+		}
+		
+		public int getLength(){
+			return this.length;
 		}
 		
 		/*Perform handshake
@@ -117,9 +126,39 @@ public class Message {
 			return handshake;
 		}
 		
-		public static final String[] message_names= { "Choke", "Unchoke",
-			"Interested", "Not Interested", "Have", "Bitfield", "Request",
-			"Piece", "Cancel" };
+
+		
+		public static String getMessageName(byte id){
+			if(id==0){
+				return "Choke";
+			}
+			if(id==1){
+				return "Unchoke";
+			}
+			if(id==2){
+				return "Interested";
+			}
+			if(id==3){
+				return "Not Interested";
+			}
+			if(id==4){
+				return "Have";
+			}
+			if(id==5){
+				return "Bitfield";
+			}
+			if(id==6){
+				return "Request";
+			}
+			if(id==7){
+				return "Piece";
+			}
+			if(id==8){
+				return "Cancel";
+			}else{
+				return "null message";
+			}
+		}
 
 		public static Message readMessage(InputStream input) throws IOException{
 			DataInputStream data_input = new DataInputStream(input);
@@ -138,8 +177,8 @@ public class Message {
 			
 			byte message_type = data_input.readByte();
 			
-			if(message_type >= 0 && message_type < Message.message_names.length){
-				System.out.println("Message type is: "+Message.message_names[message_type]);
+			if(message_type >= 0 && message_type < 9){
+				System.out.println("Message type is: "+Message.getMessageName(message_type));
 			}
 			else{
 				/*If we get here, the next byte is invalid.*/
@@ -199,4 +238,65 @@ public class Message {
 					Integer.valueOf(length) + ", Type is " +  Integer.toHexString(message_type & 0xFF));
 			
 		}
+		
+		/*Writes the message to the outputstream and returns the number of bytes written. */
+		public static int writeMessage(OutputStream output, Message message) throws IOException{
+			
+			if(message==null){
+				throw new IOException("Message was null. Could not write to output stream");
+			}
+			
+			try{
+				DataOutputStream data_output = new DataOutputStream(output);
+				System.out.println("Writing message...");
+				
+				data_output.writeInt(message.getLength());
+				
+				if(message.getLength() > 0){
+					data_output.writeByte(message.getID());
+						if(message.getID() == Message.bitfield){
+							/*Convert the bitfield message bits into boolean and store them in a byte array. */
+						}
+						if(message.getID() == Message.piece){
+							PieceMessage piece_message = (PieceMessage) message;
+							data_output.writeInt(piece_message.getPieceIndex());
+							data_output.writeInt(piece_message.getBeginningOfBlock());
+							data_output.write(piece_message.getBlock());
+							
+						}
+						if(message.getID() == Message.request){
+							RequestMessage req_message = (RequestMessage) message;
+							data_output.writeInt(req_message.getPieceIndex());
+							data_output.writeInt(req_message.getBeginningOfBlock());
+							data_output.writeInt(req_message.getBlockLength());
+							
+						}
+						if(message.getID()==Message.have){
+							HaveMessage have_message = (HaveMessage) message;
+							data_output.writeInt(have_message.getPieceIndex());
+							
+						}
+						data_output.flush();
+				}
+			}
+			
+			catch(NullPointerException null_ptr){
+				throw new IOException("Could not write to stream because it is null.");
+			}
+			
+			return message.getLength();
+}
+		
+public String toString(){
+	if(this.message_id == Message.keep_alive){
+		return "keep alive";
+	}
+	
+	String str = Message.getMessageName(this.message_id);
+	return str;
+}
+			
+		
+		
+		
 }
