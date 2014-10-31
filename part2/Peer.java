@@ -207,6 +207,47 @@ public class Peer extends Thread implements Runnable{
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
 	private void downloadPieces() throws EOFException, IOException{
+            System.out.println("IN DOWNLOAD PIECES");
+            byte interestedMessageID = 2;
+            
+            /*creating an Interested message*/
+            Message interestedRequest = new Message(1, interestedMessageID);
+            DataInputStream data = null;
+            
+            /*m stores the response from the peer*/
+            Message m = Message.readMessage(data);
+            
+            /*bitfield message*/
+            if(m.message_id == 5)
+            {
+                
+            }
+            
+            /*sending an interested message to the Peer*/
+            outputStream.write(interestedRequest.messageSent);
+            outputStream.flush();
+             /*find out how long we have to wait for a message later*/
+            //peerSocket.setSoTimeout(1000000);
+           
+            
+            /*we recieved an unchoke message*/
+            if(m.message_id == 1)
+            {
+                System.out.println("Recieved unchoke message");
+                inputStream.readByte();
+                
+            }
+            
+            /*int pieces = 0;
+            while(true)
+            {
+                System.out.println("Inside infinite loop in Peer.java");
+                //breaks out of the infinite loop until we have all the pieces or we get an unchoke message
+                if(pieces == info_hash.length || m.message_id == 0)
+                {
+                    break;
+                }
+            }*/
 	}
 	
 	/*

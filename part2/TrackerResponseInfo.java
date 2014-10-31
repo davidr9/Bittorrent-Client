@@ -109,7 +109,7 @@ public class TrackerResponseInfo {
 	}
 	
 	/*method to randomly generate peerid, not sure if necessary*/
-    /*    
+       
 	private byte[] generatePeerID(){
 		byte[] peerid = new byte[20];
         peerid[0] = 'R'; peerid[1] = 'U'; peerid[2] = 'B'; peerid[3] = 'T'; peerid[4] = '1';peerid[5] = '1';
@@ -120,5 +120,5 @@ public class TrackerResponseInfo {
             peerid[i] = (byte) randomChar;              
         }
             return peerid;
-     }*/
+     }
 }/*end of TrackerResponseInfo class*/

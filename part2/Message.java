@@ -49,7 +49,11 @@ public class Message {
 
 		/*piece: <length prefix> is 9 + x and message ID 7*/
 		public static final byte piece = 7;
-		
+                
+                byte[] messageSent = null;
+                
+                byte[] messageRecieved = null; 
+                
 		public static final byte cancel = 8;
 
 		public static final Message keep_alive_message = new Message(0, keep_alive);
