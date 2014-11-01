@@ -30,6 +30,8 @@ public class RUBTClient extends Thread{
 	
 	private static int completed;
 	
+	public static ByteBuffer[] pieces;
+	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
 	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
@@ -67,6 +69,7 @@ public class RUBTClient extends Thread{
 			return;
 		}
         
+        pieces = torrentData.piece_hashes;
         ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
         connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
         
@@ -233,6 +236,7 @@ public class RUBTClient extends Thread{
     	
     	for (int i = 0; i < peers.size(); i++){
 			String ip = peers.get(i).getIP();
+			System.out.println("Peer at " + ip);
 			if (ip.equals("128.6.171.130") || ip.equals("128.6.171.131")){
 				connectedPeers.add(peers.get(i));
 				System.out.println("Added peer at " + peers.get(i).getIP());
@@ -259,6 +263,8 @@ public class RUBTClient extends Thread{
 		System.out.println("Stopped: " + stopped);
 	}/*end of publishTrackerInfo*/
 	
-	
+	public boolean verifyPiece(byte[] piece){
+		return false;
+	}
 	
 }/*end of RUBTClient class*/
