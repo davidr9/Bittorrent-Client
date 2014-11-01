@@ -1,4 +1,3 @@
-
 public class RequestMessage extends Message{
 
 	/*integer specifying the zero-based piece index*/
@@ -19,7 +18,7 @@ public class RequestMessage extends Message{
 		return piece_index;
 	}
 
-	public int getBlockOffset() {
+	public int getBeginningOfBlock() {
 		return begin_block;
 	}
 
