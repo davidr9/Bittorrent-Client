@@ -34,6 +34,8 @@ public class Peer extends Thread implements Runnable{
 	
 	private String tName;
 	
+	public static int pieceLength = RUBTClient.torrentData.piece_length;
+	
 	/**
 	 * Creates a new peer object
 	 * 
@@ -203,52 +205,49 @@ public class Peer extends Thread implements Runnable{
 		return 0;
 	}
 	
+	public byte[] storeResponse(byte[] response){
+		try {
+			this.inputStream.readFully(response);
+			this.peerSocket.setSoTimeout(130000);
+			
+		} catch (IOException e) {
+			System.err.print("COULD NOT READ RESPONSE");
+			return null;
+		}	
+		return response;
+	}
+	
 	/*
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
 	private void downloadPieces() throws EOFException, IOException{
-            System.out.println("IN DOWNLOAD PIECES");
-            byte interestedMessageID = 2;
-            
-            /*creating an Interested message*/
-            Message interestedRequest = new Message(1, interestedMessageID);
-            DataInputStream data = null;
-            
-            /*m stores the response from the peer*/
-            Message m = Message.readMessage(data);
-            
-            /*bitfield message*/
-            if(m.message_id == 5)
-            {
-                
-            }
-            
-            /*sending an interested message to the Peer*/
-            outputStream.write(interestedRequest.messageSent);
-            outputStream.flush();
-             /*find out how long we have to wait for a message later*/
-            //peerSocket.setSoTimeout(1000000);
-           
-            
-            /*we recieved an unchoke message*/
-            if(m.message_id == 1)
-            {
-                System.out.println("Recieved unchoke message");
-                inputStream.readByte();
-                
-            }
-            
-            /*int pieces = 0;
-            while(true)
-            {
-                System.out.println("Inside infinite loop in Peer.java");
-                //breaks out of the infinite loop until we have all the pieces or we get an unchoke message
-                if(pieces == info_hash.length || m.message_id == 0)
-                {
-                    break;
-                }
-            }*/
-	}
+		
+		boolean readSuccessfully = false;
+		boolean unchoked = false;
+		int blockSize = 16384;
+		
+		while (true){
+			Message interested = new Message(1, (byte) 2);
+			readSuccessfully = Message.writeMessage(outputStream, interested);
+			
+			if (!readSuccessfully){
+				continue;
+			}
+			
+			Message peerResponse = Message.readMessage(inputStream);
+			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
+			
+			if (peerResponse.message_id == Message.unchoke){
+				unchoked = true;
+			}
+			
+			while (unchoked){
+				
+			}
+			
+			
+		}
+	}	
 	
 	/*
 	 * Creates new thread for Runnable Peer and starts it
@@ -279,7 +278,7 @@ public class Peer extends Thread implements Runnable{
 			
 			connected = shakeHand();
 			if (connected == -1){
-				System.err.print("Could not connect with peer " + tName);
+				System.err.print("Could not connect with peer " + IPAddress);
 				System.err.println(". Some pieces of the file to download may be lost.");
 			} else {
 				downloadPieces();
