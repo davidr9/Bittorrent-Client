@@ -32,6 +32,10 @@ public class RUBTClient extends Thread{
 	
 	public static ByteBuffer[] pieces;
 	
+	public static int numPieces;
+	
+	public static int lastPieceLength;
+	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
 	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
@@ -70,6 +74,13 @@ public class RUBTClient extends Thread{
 		}
         
         pieces = torrentData.piece_hashes;
+        if (torrentData.file_length%torrentData.piece_length == 0){
+        	numPieces = torrentData.file_length/torrentData.piece_length;
+        } else {
+        	numPieces = torrentData.file_length/torrentData.piece_length + 1;
+        	lastPieceLength = torrentData.file_length%torrentData.piece_length;
+        }
+       
         ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
         connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
         
@@ -263,8 +274,20 @@ public class RUBTClient extends Thread{
 		System.out.println("Stopped: " + stopped);
 	}/*end of publishTrackerInfo*/
 	
-	public boolean verifyPiece(byte[] piece){
-		return false;
+	public static boolean[] convertBitfield(byte[] bits, int significantBits) {
+		boolean[] retVal = new boolean[significantBits];
+		int boolIndex = 0;
+		for (int byteIndex = 0; byteIndex < bits.length; ++byteIndex) {
+			for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
+				if (boolIndex >= significantBits) {
+					// Bad to return within a loop, but it's the easiest way
+					return retVal;
+				}
+
+				retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true: false;
+			}
+		}
+		return retVal;
 	}
 	
 }/*end of RUBTClient class*/
