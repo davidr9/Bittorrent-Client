@@ -51,9 +51,9 @@ public class Message {
 		/*piece: <length prefix> is 9 + x and message ID 7*/
 		public static final byte piece = 7;
 		                
-                byte[] messageSent = null;
+        byte[] messageSent = null;
                 
-                byte[] messageRecieved = null; 
+        byte[] messageReceived = null; 
                 
 		public static final byte cancel = 8;
 
@@ -62,7 +62,6 @@ public class Message {
 		public static final Message unchoke_message = new Message(1, unchoke);
 		public static final Message uninterested_message = new Message(1, un_interested);
 		public static final Message interested_message = new Message(1, interested);
-		
 		
 		/* length prefix is a 4-byte big-endian value and message ID is a single byte.*/
 		public Message(int length_prefix, byte message_id){
@@ -76,6 +75,15 @@ public class Message {
 		
 		public int getLength(){
 			return this.length;
+		}
+		
+		/*Convert length-prefix integer to byte array and add it as the prefix for the message*/
+		public static byte[] addLengthPrefix(int base10, byte[] result) {
+			result[0] = (byte) (base10 >> 24);
+			result[1] = (byte) (base10 >> 16);
+			result[2] = (byte) (base10 >> 8);
+			result[3] = (byte) (base10);
+			return result;
 		}
 		
 		/*Perform handshake
@@ -160,8 +168,8 @@ public class Message {
 			}
 		}
 
-		public static Message readMessage(InputStream input) throws IOException{
-			DataInputStream data_input = new DataInputStream(input);
+		
+		public static Message readMessage(DataInputStream data_input) throws IOException{
 			
 			/*read the data_input length*/
 			int length = data_input.readInt();
@@ -230,24 +238,29 @@ public class Message {
 				data_input.readFully(piece);
 				System.out.println("PeerMessage: Piece block received (" + index + ","
 					+ begin + "," + piece_length + ").");
-			return new PieceMessage(index, begin, piece);
+				return new PieceMessage(index, begin, piece);
+			}
+			
+			if(message_type == bitfield){
+				byte[] payload = new byte[length - 1];
+				int numBytes = data_input.read(payload, 0, length -1);
+				return new BitfieldMessage(length, payload);
 			}
 			
 			/*If we reach here, the message was not recognized*/
-			throw new IOException("Message not recognized: Length is" + 
+			throw new IOException("Message not recognized: Length is " + 
 					Integer.valueOf(length) + ", Type is " +  Integer.toHexString(message_type & 0xFF));
 			
 		}
 		
 		/*Writes the message to the outputstream and returns the number of bytes written. */
-		public static int writeMessage(OutputStream output, Message message) throws IOException{
+		public static boolean writeMessage(DataOutputStream data_output, Message message) throws IOException{
 			
 			if(message==null){
 				throw new IOException("Message was null. Could not write to output stream");
 			}
 			
 			try{
-				DataOutputStream data_output = new DataOutputStream(output);
 				System.out.println("Writing message...");
 				
 				data_output.writeInt(message.getLength());
@@ -284,19 +297,34 @@ public class Message {
 				throw new IOException("Could not write to stream because it is null.");
 			}
 			
-			return message.getLength();
-}
+			return true;
+		}
 		
-public String toString(){
-	if(this.message_id == Message.keep_alive){
-		return "keep alive";
-	}
+		public String toString(){
+			if(this.message_id == Message.keep_alive){
+				return "keep alive";
+			}
 	
-	String str = Message.getMessageName(this.message_id);
-	return str;
-}
+			String str = Message.getMessageName(this.message_id);
+			return str;
+		}
 			
-		
-		
+		/*Get the payload from a Have or Request message received from the peer*/
+		public byte[] getPayload(){
+			byte[] payload = null;
+			
+			switch (this.message_id){
+				case (byte) 4: /*Have message payload is 4 bytes*/
+					payload = new byte[4];
+					System.arraycopy(this.messageReceived, 5, payload, 0, 4);
+					return payload;
+				case (byte) 6: /*Request message payload is 12 bytes*/
+					payload = new byte[12];
+					System.arraycopy(this.messageReceived, 5, payload, 0, 12);
+					return payload;
+				default: /* Message has no payload*/
+					return null;
+			}
+		}
 		
 }
