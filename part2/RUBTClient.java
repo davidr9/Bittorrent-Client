@@ -1,10 +1,8 @@
-import java.io.*;
+
+import java.util.*;
 import java.net.*;
-import java.net.URL.*;
-import java.security.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.nio.*;
+import java.io.*;
+import java.nio.ByteBuffer;
 
 /**
  * @author Julie Duncan
@@ -12,282 +10,304 @@ import java.nio.*;
  * @author Rosheen Chaudhry
  */
 
-public class RUBTClient extends Thread{
+public class Peer extends Thread implements Runnable{
+
+	byte[] peerID; /*the id of this peer*/
 	
-	private static int port;
+	private String IPAddress; /*the IP address of this peer as a String*/
 	
-	private static int uploaded;
+	private int portNum; /*the port number of this peer*/
 	
-	private static int downloaded;
+	final byte[] clientID; /*the peer ID of the local client*/
 	
-	private static int left;
+	private final byte[] info_hash; /*the info hash of the torrent that this peer is using to communicate*/
 	
-	private static String event;
+	private Socket peerSocket; /*the socket connecting the local client to this peer*/
 	
-	private static int started;
+	private DataOutputStream outputStream; /*stream for outgoing data to peer*/
 	
-	private static int stopped;
+	private DataInputStream inputStream; /*stream for incoming data to peer*/
 	
-	private static int completed;
+	private boolean hand_shook = false; /*true if handshake with peer is completes successfully*/
 	
-	public static ByteBuffer[] pieces;
+	private Thread th;
 	
-	public static int numPieces;
+	private String tName;
 	
-	public static int lastPieceLength;
+	public static int pieceLength = RUBTClient.torrentData.piece_length;
 	
-	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
-	
-	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
-	
-	private static List<Peer> connectedPeers;
-	
-	private static long beginTime;
-	
-	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
+	/**
+	 * Creates a new peer object
+	 * 
+	 * @param id byte array containing id of peer
+	 * @param ip IP address of peer
+	 * @param port port number through which to communicate with peer
+	 * @param cid ID of local client host
+	 * @param info_hash info hash being used to communicate with peer
+	 */
+	public Peer (byte[] id, String ip, int port, byte[] cid, byte[] info_hash) throws UnknownHostException, IOException{
+		this.peerID = id;
+		this.portNum = port;
+		this.IPAddress = ip;	
+		this.peerSocket = null;
+		this.info_hash = info_hash;
+		this.clientID = cid;
 		
-		/*Error handling when user enters incorrect number of arguments*/
-        if (args.length != 2)
-		{
-			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
+	}/*end of Peer class constructor*/
+	
+	/*
+	 * Find private variable IP address
+	 * 
+	 * @return IP address of peer as string
+	 */
+	public String getIP(){
+		return this.IPAddress;
+	}
+	
+	/*
+	 * Find private variable port number
+	 * 
+	 * @return port number as integer
+	 */
+	public int getPort(){
+		return this.portNum;
+	}
+	
+	/*
+	 * Open a TCP socket on the local machine to contact the peer using the TCP peer protocol
+	 * 
+	 * @return true if success, false otherwise
+	 */
+	public boolean openSocket(){
+		try {
+			this.peerSocket = new Socket(this.IPAddress, this.portNum);
+			this.outputStream = new DataOutputStream(this.peerSocket.getOutputStream()); // open output stream for outgoing data
+			System.out.println("Data output stream for " + this.IPAddress + " opened...");
+			this.inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
+			System.out.println("Data input stream for " + this.IPAddress + " opened...");
+			return true;
+		}catch (UnknownHostException e) { //catch error for incorrect host name and exit program
+	            System.out.println("Peer " + peerID + " is unknown");
+	            return false;
+	    } catch (IOException e) { //catch error for invalid port and exit program
+	            System.out.println("Connection to " + peerID + " failed");
+	            return false;
+	    }  
+	}/*end of openSocket method*/
+
+	/* 
+	 * This method sends a Handshake to the peer. It checks the peers response for
+	 * a matching peerID and info hash
+	 * 
+	 * @throws IOException and SocketException if error is detected
+	 * @return 0 if successful 
+	 * @return -1 if handshake is unsuccessful for any reason
+	 */
+	public int shakeHand() throws IOException, SocketException{
+		
+		if(this.hand_shook){
+			/* This means handshake already happened. */
+			System.err.append("Handshake already made. Please move on.");
+			return -1;
+		}
+		
+		if(this.clientID == null){
+			/* Missing clientID */
+			System.err.println("ClientID is missing; could not complete handshake");
+			return -1;
+		}
+		
+		/*open the socket*/
+		if(!this.openSocket()){
+			/* Connection unsuccessful*/
+			System.err.println("Peer connection unsuccesful. Cannot complete handshake");
+			this.peerSocket.close();
+			return -1;
+		}
+		
+		System.out.println("All of our conditions have been met. Beginning handshaking");
+		
+		String infoHashString = "";
+		
+		infoHashString = RUBTClient.escape(this.info_hash);
+		
+		
+		System.out.println("PEER (" + RUBTClient.escape(this.peerID) + "): INFO HASH: " + infoHashString);
+		
+		/* Create an array to store handshake data */
+		byte[] handshake_info = Message.generateHandShake(this.info_hash, this.clientID);
+		/* initiate handshake */
+		try {
+			this.peerSocket.setSoTimeout(12000); /*wait a given time for success*/
+			this.outputStream.write(handshake_info);
+			this.outputStream.flush();
+			System.out.println("HANDSHAKE SENT");
+			
+		} catch (SocketException e) {
+			System.err.println("TIMEOUT");
+			e.printStackTrace();
+			this.peerSocket.close();
+			return -1;
+		} catch (IOException e) {
+			System.err.println("COULD NOT WRITE HANDSHAKE INFO");
+			e.printStackTrace();
+			this.peerSocket.close();
+			return -1;
+		}
+		
+		/* Receive message from client */
+		byte[] complete_handshake = new byte[68];
+		try {
+			this.inputStream.readFully(complete_handshake);
+			this.peerSocket.setSoTimeout(130000);
+			
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+			System.err.print("COULD NOT READ HANDSHAKE");
+			e.printStackTrace();
+			this.peerSocket.close();
+			return -1;
+		}		
+	    
+	    /*Check if info hash matches*/
+	    for (int i = 28; i < 48; i++){
+	      if (handshake_info[i] != complete_handshake[i]) {
+	        System.err.println("INFO HASH DID NOT MATCH");
+	        this.peerSocket.close();
+	        return -1;
+	      }
+	    }
+		
+		/*Check if peerID matches*/
+		if (this.peerID != null && this.peerID.length == 20) {
+	      byte[] peer_id_array = this.peerID;
+	      for (int i = 48; i < 68; i++)
+	        if (complete_handshake[i] != peer_id_array[i - 48]) {
+	          System.err.println("PEERID DID NOT MATCH");
+	          this.peerSocket.close();
+	          return -1;
+	        }
+	      
+		} else if (this.peerID != null && this.peerID.length != 20) {
+	      System.err.println("PEERID LENGTH IS INCORRECT");
+	      this.peerID = new byte[20];
+	      this.peerSocket.close();
+	      /*System.arraycopy(complete_handshake, 48, this.peerID, 0, 20);*/
+	      return -1;
+
+	    } else {
+	    	System.err.println("NO PEER ID ");
+	    	this.peerSocket.close();
+	    }
+
+		System.out.println("HANDSHAKE COMPLETE");
+		
+		return 0;
+	}
+	
+	public byte[] storeResponse(byte[] response){
+		try {
+			this.inputStream.readFully(response);
+			this.peerSocket.setSoTimeout(130000);
+			
+		} catch (IOException e) {
+			System.err.print("COULD NOT READ RESPONSE");
+			return null;
+		}	
+		return response;
+	}
+	
+	/*
+	 * Downloads all pieces from this peer that we have not already downloaded.
+	 */
+	private void downloadPieces() throws EOFException, IOException{
+		
+		boolean readSuccessfully = false;
+		boolean unchoked = false;
+		boolean[] whichPieces;
+		int blockSize = 16384;
+		
+		while (true){
+			Message interested = new Message(1, (byte) 2);
+			readSuccessfully = Message.writeMessage(outputStream, interested);
+			
+			if (!readSuccessfully){
+				continue;
+			}
+			
+			Message peerResponse = Message.readMessage(inputStream);
+			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
+			
+			if (peerResponse.message_id == Message.bitfield){
+				BitfieldMessage bitResponse = (BitfieldMessage) peerResponse;
+				byte[] bitfield = bitResponse.getPieces();
+				whichPieces = RUBTClient.convertBitfield(bitfield, bitfield.length * 8);				
+			}
+			
+			if (peerResponse.message_id == Message.unchoke){
+				unchoked = true;
+			}
+			
+			while (unchoked){
+				//fill this in		
+			}
+			
+			
+		}
+	}
+	
+	/*
+	 * Creates new thread for Runnable Peer and starts it
+	 * 
+	 * @throws UnsupportedEncodingException for escape 
+	 */
+	public void startThread() throws UnsupportedEncodingException{
+		
+		if (th == null){
+			tName = RUBTClient.escape(peerID);
+			th = new Thread(this, tName);
+			th.start();
+		}
+	}
+	
+	/*
+	 * Run function for peer threads.
+	 * 
+	 * Creates new thread with peerID as thread name. Begins downloading pieces from
+	 * thread, then closes socket and all streams when finished.
+	 */
+	public void run(){
+		
+		System.out.println("Thread " + tName + " has begun running");
+		int connected;
+		
+		try {	
+			
+			connected = shakeHand();
+			if (connected == -1){
+				System.err.print("Could not connect with peer " + IPAddress);
+				System.err.println(". Some pieces of the file to download may be lost.");
+			} else {
+				downloadPieces();
+			}
+			
+		} catch (UnsupportedEncodingException e) {
+			System.err.println(e.getMessage());
+			return;
+		} catch (EOFException e) {
+			e.printStackTrace();
+			return;
+		} catch (IOException e) {
+			e.printStackTrace();
 			return;
 		}
 		
-        String inFileName = args[0]; /*torrent file*/
-		String outFileName = args[1]; /*file to output successful download to*/
-		
-		File torrentFile = new File(inFileName); /*torrent file stream*/
-		
-        /*opens the torrent file or throws an exception if file doesn't exist*/
-        try {
-			/*If torrentFile is null, then program exits*/
-			if (!torrentFile.exists()){
-				System.err.println("Torrent file does not exist");
-				return;
-			}
-			/*parses torrent if torrent exists*/
-            torrentData = torrentParser(torrentFile);             
-		} catch (NullPointerException e)
-		{
-			System.err.println("Cannot proceed if torrent file is null");
-			return;
+		try {
+			inputStream.close();
+			outputStream.close();
+			peerSocket.close();
+		} catch (Exception e){
+			System.err.println(e.getMessage());
 		}
-        
-        pieces = torrentData.piece_hashes;
-        if (torrentData.file_length%torrentData.piece_length == 0){
-        	numPieces = torrentData.file_length/torrentData.piece_length;
-        } else {
-        	numPieces = torrentData.file_length/torrentData.piece_length + 1;
-        	lastPieceLength = torrentData.file_length%torrentData.piece_length;
-        }
-       
-        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
-        connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
-        
-        
-	}/*end of main method*/
-
-	/*parses the data in the torrent file given by the user*/
-    private static TorrentInfo torrentParser(File torrentFile) throws BencodingException, FileNotFoundException, IOException{
-                try {
-                		/*Create streams*/
-                        FileInputStream torrentStream = new FileInputStream(torrentFile);
-                        DataInputStream torrentReader = new DataInputStream(torrentStream);
-                        int length = (int) torrentFile.length();
-                        
-                        /*Read the torrent file into a byte array*/
-                        byte[] tFile_byte = new byte[length];
-                        torrentReader.readFully(tFile_byte);
-                        
-                        /*Close streams*/
-                        torrentReader.close();
-                        torrentStream.close();
-                        
-                        /*Use byte array to create object that holds torrent data*/
-                        TorrentInfo tInfo = new TorrentInfo(tFile_byte);
-                        return tInfo;
-                } catch (BencodingException e){
-                        System.err.println(e.getMessage());
-                        return null;
-                } catch (FileNotFoundException e){
-                        System.err.println(e.getMessage());
-                        return null;
-                } catch (IOException e){
-                        System.err.println(e.getMessage());
-                        return null;
-                }
-
-     }/*end of torrentParser method*/
-
-    /*sends an HTTP GET request to the tracker and creates connection.*/
-    private static ArrayList<Peer> sendRequestToTracker(TorrentInfo tInfo) 
-    		throws MalformedURLException, IOException, UnknownHostException{
-       
-    	URL newURL = createURL(tInfo); /*Properly formatted URL*/
-    	
-    	try {
-    		/*send HTTP GET request to tracker*/
-    		byte[] trackerResponse;
-    	    HttpURLConnection request = (HttpURLConnection) newURL.openConnection();
-    	    request.setRequestMethod("GET");
-    	    DataInputStream trackerStream = new DataInputStream(request.getInputStream());
-    	   
-    	    /*get tracker response*/
-    	    int requestSize = request.getContentLength(); 
-    	    trackerResponse = new byte[requestSize];
-    	    trackerStream.readFully(trackerResponse);
-    	    trackerStream.close();
-    	    
-    	    return findPeerList(trackerResponse); /*return list of peers given by tracker*/
-    	} catch (IOException e) {
-    		System.err.println("Error: " + e.getMessage());
-    		return null;
-    	} catch (Exception e) {
-    		System.err.println("Error: " + e.getMessage());
-    		return null;
-    	}
-        
-    }/*end of sendRequestToTracker method*/
-    
-    /*Concatenates string with relevant data into proper URL format and returns equivalent URL*/
-    private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
-    	String workingURL = tInfo.announce_url.toString() + '?'; /*base URL*/
-    	
-    	String escapedInfoHash = escape(tInfo.info_hash.array()); /*escaped version of info_hash*/
-    	String escapedPeerID = escape(clientID); /*escaped version of id*/
-    	String port = Integer.toString(extractPort(tInfo.announce_url));
-    	String left = Integer.toString(tInfo.file_length); /*initially set as the size of the file to be downloaded*/
-   
-    	/*concatenate data into proper URL format*/
-    	workingURL = workingURL + "info_hash" + "=" + escapedInfoHash + "&peer_id=" + escapedPeerID + "&port="
-    			+ port + "&uploaded=0&downloaded=0&left=" + left;
-    	
-    	try {
-    		URL finalURL = new URL(workingURL);
-        	return finalURL;
-    	} catch (MalformedURLException e){
-    		System.err.println("Error: " + e.getMessage());
-    		return null;
-    	}
-    }/*end of createURL method*/
-    
-    
-    /*Converts into hex. This is decoding the SHA1*/
-    public static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
-            String result = ""; //empty string to build upon and return
-            char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}; //list of possible hex digits in base 16
-
-            
-            for (int i = 0; i < unEscaped.length; i++) {
-            		/*if character in question is invalid for URL encoding*/
-                    if ((unEscaped[i] & 0x80) == 0x80){
-                            byte curr = unEscaped[i];
-                            byte lo = (byte) (curr & 0x0f); /*retrieves least significant byte in hex form*/
-                            byte hi = (byte) ((curr >> 4) & 0x0f); /*retrieves most significant byte in hex form*/
-                            result = result + '%' + hexDigits[hi] + hexDigits[lo]; /*append the hex representation preceded by '%'*/
-                    } else {
-                    	try {
-                    		 result = result + URLEncoder.encode(new String(new byte[] {unEscaped[i]}),"UTF-8"); /*append character as is*/
-                    	} catch (UnsupportedEncodingException e) {
-                    		System.out.println("Error: " + e.getMessage());
-                    	}
-                    }         
-            }   
-
-            return result;
-    }/*end of escape method*/
-    
-    /*
-     * Returns the list of peers generated from the tracker as an array list 
-     */
-    private static ArrayList<Peer> findPeerList(byte[] tracker_response) throws BencodingException, IOException{
-        
-    		try{
-    			TrackerResponseInfo trackerData = new TrackerResponseInfo(tracker_response); /*create object with data from tracker*/
-        		ArrayList<Peer> peers = trackerData.peers; /*get list of peers from tracker*/
-        		if (peers.isEmpty()){
-        			throw new NullPointerException("List of peers is empty");
-        		}
-        		
-        		return peers;
-    		} catch (BencodingException e) {
-    			System.err.println("Error: " + e.getMessage());
-    			return null;
-    		} catch (IOException e) {
-    			System.err.println("Error: " + e.getMessage());
-    			return null;
-    		}
-    		
-    }/*end of findPeerList method*/
-    
-    /*
-     * Returns the first peer whose peer_id prefix is "RUBT11"
-     */
-    private static Peer choosePeer(ArrayList<Peer> peers, int start) throws UnsupportedEncodingException {
-		
-    	for (int i = start ; i < peers.size(); i++){
-			String ip = peers.get(i).getIP();
-			if (ip.equals("128.6.171.130") || ip.equals("128.6.171.131")){
-				return peers.get(i);
-			}
-		}
-    	
-    	System.err.println("No valid peer found in list");
-		return null;
-	}/*end of choosePeer method*/
-    
-    public static int extractPort(URL url){
-		return url.getPort();
 	}
-    
-    private static void connectToPeers(ArrayList<Peer> peers) throws SocketException, IOException{
-    	
-    	connectedPeers = new ArrayList<Peer>();
-    	System.out.println(peers.size());
-    	
-    	for (int i = 0; i < peers.size(); i++){
-			String ip = peers.get(i).getIP();
-			System.out.println("Peer at " + ip);
-			if (ip.equals("128.6.171.130") || ip.equals("128.6.171.131")){
-				connectedPeers.add(peers.get(i));
-				System.out.println("Added peer at " + peers.get(i).getIP());
-			}
-    	}
-    	
-    	int connected = 0;
-    	
-    	beginTime = System.nanoTime(); /*This is where we will begin to time the download*/
-    	
-    	for (int i = 0; i < connectedPeers.size(); i++){
-				connectedPeers.get(i).startThread();
-		}
-    } /*end of connectToPeers method*/
-    
-    /*Prints the connection information to the tracker*/
-	public static void publishTrackerInfo()
-	{
-		System.out.println("Uploaded: " + uploaded);
-		System.out.println("Downloaded: " + downloaded);
-		System.out.println("Left: " + left); 
-		System.out.println("Completed: " + completed);
-		System.out.println("Started: " + started);
-		System.out.println("Stopped: " + stopped);
-	}/*end of publishTrackerInfo*/
-	
-	public static boolean[] convertBitfield(byte[] bits, int significantBits) {
-		boolean[] retVal = new boolean[significantBits];
-		int boolIndex = 0;
-		for (int byteIndex = 0; byteIndex < bits.length; ++byteIndex) {
-			for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
-				if (boolIndex >= significantBits) {
-					// Bad to return within a loop, but it's the easiest way
-					return retVal;
-				}
-
-				retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true: false;
-			}
-		}
-		return retVal;
-	}
-	
-}/*end of RUBTClient class*/
+}
