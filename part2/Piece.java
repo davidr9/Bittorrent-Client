@@ -4,24 +4,23 @@ import java.util.ArrayList;
 
 public class Piece {
 
-	final static int BLOCKSIZE = 16384;
+	final static int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
 	
-	private static int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE;
+	public static int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE;; /*total number of blocks that should make up the full piece*/
 	
-	private ByteBuffer requestedPiece;
+	private ByteBuffer requestedPiece; /*the expected SHA-1 hash of the piece*/
 	
-	private ArrayList<byte[]> blocks;
+	private ArrayList<byte[]> blocks; /*list of each block as a byte array*/
 	
-	private int numBlocks;
+	private int numBlocks; /*number of blocks added to this piece*/
 	
-	private byte[] fullPiece;
+	public byte[] fullPiece; /*concatenation of all blocks representing full piece*/
 	
-	private int index;
+	public int index; /*specified piece number of file*/
 	
-	private boolean verified;
+	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
-	public Piece(int numBlocks, int index){
-		this.numBlocks = numBlocks;
+	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
 	}
@@ -44,9 +43,10 @@ public class Piece {
 		if(numBlocks == totalBlocks)
 		{
 			return verifyPiece();
+		} else {
+			return false;
 		}
 		
-		return false;
 	}/*end of insertBlock*/
 	
 	public boolean verifyPiece() throws UnsupportedEncodingException
@@ -76,6 +76,6 @@ public class Piece {
 		}
 		
 		return verified;
-	}/*end of verifyPiece*/
+	} /*end of verifyPiece*/
 
 }/*end of Piece class*/
