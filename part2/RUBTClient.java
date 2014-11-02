@@ -38,6 +38,8 @@ public class RUBTClient extends Thread{
 	
 	public static int lastPieceLength;
 	
+	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();
+	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
 	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
@@ -84,8 +86,6 @@ public class RUBTClient extends Thread{
         	numPieces = torrentData.file_length/torrentData.piece_length + 1;
         	lastPieceLength = torrentData.file_length%torrentData.piece_length;
         }
-        
-        
        
         ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
         connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
