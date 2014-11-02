@@ -30,9 +30,15 @@ public class Peer extends Thread implements Runnable{
 	
 	private boolean hand_shook = false; /*true if handshake with peer is completes successfully*/
 	
+	private boolean unchoked;
+	
+	private boolean isInterested = false;
+	
 	private Thread th;
 	
 	private String tName;
+	
+	final int BLOCKSIZE = 16384;
 	
 	public static int pieceLength = RUBTClient.torrentData.piece_length;
 	
@@ -222,20 +228,27 @@ public class Peer extends Thread implements Runnable{
 	 */
 	private void downloadPieces() throws EOFException, IOException{
 		
-		boolean readSuccessfully = false;
-		boolean unchoked = false;
-		int blockSize = 16384;
+		boolean readSuccessfully = false; /*true if peer successfully reads sent message*/
+		boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 		
 		while (true){
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
 			
-			if (!readSuccessfully){
+			if (readSuccessfully){
+				isInterested = true;
+			} else {
 				continue;
 			}
 			
 			Message peerResponse = Message.readMessage(inputStream);
 			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
+			
+			if (peerResponse.message_id == Message.bitfield){
+				BitfieldMessage bitResponse = (BitfieldMessage) peerResponse;
+				byte[] bitfield = bitResponse.getPieces();
+				whichPieces = RUBTClient.convertBitfield(bitfield, bitfield.length * 8);				
+			}
 			
 			if (peerResponse.message_id == Message.unchoke){
 				unchoked = true;
@@ -243,11 +256,79 @@ public class Peer extends Thread implements Runnable{
 			
 			while (unchoked){
 				
+				for (int i = 0; i < RUBTClient.numPieces; i++){
+					RUBTClient.verifiedPieces.ensureCapacity(i+1);
+					System.out.println("Length of verifiedPieces is " + RUBTClient.verifiedPieces.size());
+					if (RUBTClient.verifiedPieces.get(i) != null || whichPieces[i] == false){
+						continue;
+					}
+					
+					Piece completePiece = requestBlocks(i);
+					if (completePiece != null){
+						RUBTClient.verifiedPieces.add(i, completePiece);
+					}
+					
+				}
+
+			}/*end of while*/
+			
+		}/*end of infinite while loop*/
+		
+	}/*end of downloadPieces*/
+	
+	public Piece requestBlocks(int piece) throws IOException{
+		
+		boolean readSuccessfully;
+		boolean pieceVerified = false;
+		Piece newPiece = new Piece(piece);
+		
+		/*sending a request for each block to the peer*/
+		for (int i = 0; i < newPiece.totalBlocks; i++){
+			int offset = BLOCKSIZE*i;
+			RequestMessage rmessage = new RequestMessage(piece, offset, BLOCKSIZE);
+			readSuccessfully = Message.writeMessage(outputStream, rmessage);
+			if (!readSuccessfully){
+				System.err.println("Could not read block from piece " + piece);
+				i--;
+				continue;
 			}
 			
+			/*if we were able to read the peer response properly, we check what message it is*/
+			Message peerResponse = Message.readMessage(inputStream);
+			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 			
+			/*checks the message after the peer response*/
+			if (peerResponse.message_id == Message.piece){
+				
+				PieceMessage peerPiece = (PieceMessage) peerResponse;
+				
+				if (peerPiece.getPieceIndex() != piece){
+					System.err.println("Peer responded with block from unrequested piece");
+					i--;
+					continue;
+				} else if (peerPiece.getBeginningOfBlock() != offset){
+					System.err.println("Peer responded wrong block from requested piece");
+					i--;
+					continue;
+				} else {
+					pieceVerified = newPiece.insertBlock(offset, peerPiece.block);
+				}
+				
+			} else if (peerResponse.message_id == Message.choke){
+				unchoked = false;
+				return null;
+			} else {
+				return null;
+			}	
+		}/*end of for*/
+		
+		if (pieceVerified){
+			return newPiece;
+		} else {
+			return null;
 		}
-	}	
+		
+	} /*end of requestBlocks*/
 	
 	/*
 	 * Creates new thread for Runnable Peer and starts it
