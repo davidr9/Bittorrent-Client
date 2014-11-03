@@ -270,7 +270,7 @@ public class Peer extends Thread implements Runnable{
 						
 						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
 							RUBTClient.event = "completed";
-							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED HOOOOORAYYYY");
+							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED");
 							finished = true;
 							Message uninterested = new Message(1, (byte) 3);
 							readSuccessfully = Message.writeMessage(outputStream, uninterested);
