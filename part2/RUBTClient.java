@@ -16,19 +16,19 @@ public class RUBTClient extends Thread{
 	
 	private static int port;
 	
-	private static int uploaded;
+	static int uploaded;
 	
-	private static int downloaded;
+	static int downloaded;
 	
-	private static int left;
+	static int left;
 	
-	private static String event;
+	public static String event;
 	
-	private static int started;
+	public static int started;
 	
-	private static int stopped;
+	public static int stopped;
 	
-	private static int completed;
+	public static int completed;
 	
 	public static ByteBuffer[] pieces;
 	
@@ -38,7 +38,7 @@ public class RUBTClient extends Thread{
 	
 	public static int lastPieceLength;
 	
-	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();
+	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();;
 	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
@@ -79,12 +79,17 @@ public class RUBTClient extends Thread{
         
         pieces = torrentData.piece_hashes;
         pieceLength = torrentData.piece_length;
+        left = torrentData.file_length;
  
         if (torrentData.file_length%torrentData.piece_length == 0){
         	numPieces = torrentData.file_length/torrentData.piece_length;
         } else {
         	numPieces = torrentData.file_length/torrentData.piece_length + 1;
         	lastPieceLength = torrentData.file_length%torrentData.piece_length;
+        }
+        
+        for (int i = 0; i < numPieces; i++){
+        	verifiedPieces.add(null);
         }
        
         ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
@@ -253,7 +258,6 @@ public class RUBTClient extends Thread{
     	
     	for (int i = 0; i < peers.size(); i++){
 			String ip = peers.get(i).getIP();
-			System.out.println("Peer at " + ip);
 			if (ip.equals("128.6.171.130") || ip.equals("128.6.171.131")){
 				connectedPeers.add(peers.get(i));
 				System.out.println("Added peer at " + peers.get(i).getIP());
