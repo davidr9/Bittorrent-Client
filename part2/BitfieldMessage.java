@@ -18,7 +18,10 @@ public class BitfieldMessage extends Message{
 		super(length, Message.bitfield);
 		this.pieces = pieces;
 	}
-	
+/**
+ * 
+ * * @return a byte array of the pieces the peer has.
+ */	
 	public byte[] getPieces(){
 		return this.pieces;
 	}
