@@ -1,3 +1,8 @@
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
 
 public class PieceMessage extends Message {
 	
