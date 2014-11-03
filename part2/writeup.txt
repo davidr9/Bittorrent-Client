@@ -1,7 +1,7 @@
 Group Members:
 Rosheen Chaudhry 140004499
 David Rubin 138008000
-Julie Duncan
+Julie Duncan 132001134
 
 Phase 2 Bittorrent Client Write-Up
 Our program decodes and parses the torrent file into a TorrentInfo Object. Once we obtain the torrent, we are able to create a URL and send an HTTP Get request to the tracker. After obtaining the bencoded tracker response, we create a TrackerResponseInfo object that decodes the bencoded tracker response. We use the tracker's response to obtain a list of peers that we can connect to.
