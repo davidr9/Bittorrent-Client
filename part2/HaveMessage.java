@@ -1,3 +1,8 @@
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
 
 public class HaveMessage extends Message{
 	
@@ -15,7 +20,6 @@ public class HaveMessage extends Message{
 	}
 	
 	/**
-	 * 
 	 * @return the index of the piece.
 	 */
 	public int getPieceIndex() {
