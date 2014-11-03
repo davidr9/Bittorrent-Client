@@ -15,6 +15,12 @@ public class PieceMessage extends Message {
 	/*block of data, which is a subset of the piece specified by the piece_index.*/
 	public byte[] block;
 	
+	/**
+	 * Constructor for piece message
+	 * @param piece_index
+	 * @param begin
+	 * @param block
+	 */
 	public PieceMessage(int piece_index, int begin, byte[] block ){
 		super(block.length+9, Message.piece);
 		
@@ -23,18 +29,33 @@ public class PieceMessage extends Message {
 		this.block = block;
 	}
 	
+	/**
+	 * 
+	 * @return integer for piece index
+	 */
 	public int getPieceIndex(){
 		return piece_index;
 	}
 	
+	/**
+	 * 
+	 * @return integer for index where block begins
+	 */
 	public int getBeginningOfBlock(){
 		return begin;
 	}
 	
+	/**
+	 * 
+	 * @return byte array for the block
+	 */
 	public byte[] getBlock(){
 		return block;
 	}
 	 
+	/**
+	 * Transforms a piece message into a string.
+	 */
 	@Override
 	public String toString(){
 		String str = "Piece (";
