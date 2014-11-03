@@ -430,7 +430,6 @@ public class Peer extends Thread implements Runnable{
 	} /*end of run*/
 	
 	/**
-	*
 	* specific timer task subclass used to send keep-alive message to peer every two minutes
 	*/
 	class KeepAlive extends TimerTask {
