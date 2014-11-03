@@ -1,0 +1,12 @@
+Group Members:
+Rosheen Chaudhry 140004499
+David Rubin
+Julie Duncan
+
+Phase 2 Bittorrent Client Write-Up
+Our program decodes and parses the torrent file into a TorrentInfo Object. Once we obtain the torrent, we are able to create a URL and send an HTTP Get request to the tracker. After obtaining the bencoded tracker response, we create a TrackerResponseInfo object that decodes the bencoded tracker response. We use the tracker's response to obtain a list of peers that we can connect to.
+
+We find every valid peer and create a thread for that peer. As a result, we send a handshake to all the peers concurrently. After the handshake was successfully obtained and verified, we begin sending the necessary messages to obtain pieces of the file. Initially, we send an interested message and obtain the bitfield message. We use the bitfield message to determine which pieces each peer contains. We then wait for the peer to respond with an unchoke message. After the peer is unchoked, we begin to request blocks from the peers. We created a Piece class that houses all the blocks in a piece. This class combines, orders, and verifies all the blocks that make up the Piece. 
+
+After we download all the pieces, we close all the threads. After closing the threads, we write the pieces to the disc and obtain a .mp4 file. This file is the song "Never Gonna Give You Up" by Rick Astley. 
+
