@@ -115,7 +115,7 @@ public class RUBTClient extends Thread{
         } else {
         	connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
         }
-        System.out.println("VAGINA VAGINA VAGINA VAGINA");
+        
         writeToDisk(outFileName);
         
 	}/*end of main method*/
