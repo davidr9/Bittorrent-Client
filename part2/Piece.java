@@ -44,6 +44,13 @@ public class Piece {
 		}
 	}
 	
+	/**
+	 * Inserts specified block at the given index.
+	 * @param blockOffset
+	 * @param block
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
 		if (numBlocks == totalBlocks || verified){
@@ -68,6 +75,11 @@ public class Piece {
 		
 	}/*end of insertBlock*/
 	
+	/**
+	 * Checks to see if this piece is correct
+	 * @return true if piece is valid
+	 * @throws UnsupportedEncodingException
+	 */	
 	public boolean verifyPiece() throws UnsupportedEncodingException, NoSuchAlgorithmException
 	{
 		if(blocks.size() != totalBlocks)
