@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 
 /**
+ * Peer object
  * @author Julie Duncan
  * @author David Rubin
  * @author Rosheen Chaudhry
@@ -65,7 +66,7 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of Peer class constructor*/
 	
-	/*
+	/**
 	 * Find private variable IP address
 	 * 
 	 * @return IP address of peer as string
@@ -74,7 +75,7 @@ public class Peer extends Thread implements Runnable{
 		return this.IPAddress;
 	}
 	
-	/*
+	/**
 	 * Find private variable port number
 	 * 
 	 * @return port number as integer
@@ -83,7 +84,7 @@ public class Peer extends Thread implements Runnable{
 		return this.portNum;
 	}
 	
-	/*
+	/**
 	 * Open a TCP socket on the local machine to contact the peer using the TCP peer protocol
 	 * 
 	 * @return true if success, false otherwise
@@ -105,7 +106,7 @@ public class Peer extends Thread implements Runnable{
 	    }  
 	}/*end of openSocket method*/
 
-	/* 
+	/** 
 	 * This method sends a Handshake to the peer. It checks the peers response for
 	 * a matching peerID and info hash
 	 * 
@@ -215,7 +216,7 @@ public class Peer extends Thread implements Runnable{
 		return 0;
 	}
 	
-	/*
+	/**
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
 	private void downloadPieces() throws EOFException, IOException{
@@ -268,6 +269,12 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of downloadPieces*/
 	
+	/**
+	 * Sends a request message for blocks within the specified piece.
+	 * @param piece
+	 * @return
+	 * @throws IOException
+	 */
 	public Piece requestBlocks(int piece) throws IOException{
 		
 		boolean readSuccessfully;
@@ -330,7 +337,7 @@ public class Peer extends Thread implements Runnable{
 		
 	} /*end of requestBlocks*/
 	
-	/*
+	/**
 	 * Creates new thread for Runnable Peer and starts it
 	 * 
 	 * @throws UnsupportedEncodingException for escape 
@@ -344,7 +351,7 @@ public class Peer extends Thread implements Runnable{
 		}
 	}
 	
-	/*
+	/**
 	 * Run function for peer threads.
 	 * 
 	 * Creates new thread with peerID as thread name. Begins downloading pieces from
