@@ -300,4 +300,32 @@ public class RUBTClient extends Thread{
 		return retVal;
 	}
 	
+	/*Goes through arraylist of pieces and writes all pieces to file*/
+        public static void writeToDisk(String outFile) throws FileNotFoundException, IOException
+        {
+            /*outFile is the name you want to save the file to*/
+            RandomAccessFile file = new RandomAccessFile(outFile, "rw");
+            long len = numPieces * pieceLength; 
+            /*sets the file length*/
+            file.setLength(len);
+            /*index in which the byte[] will be written*/
+            long index = 0;
+            
+            /*goes through pieces array and writes pieces to file*/
+            for(int i = 0; i < verifiedPieces.size()-1; i++)
+            {
+                if(verifiedPieces.get(i) == null)
+                {
+                    continue;
+                }else{
+                    System.out.println("Writing to file");
+                    index = (long) verifiedPieces.get(i).index;
+                    file.seek(index);
+                    file.write(verifiedPieces.get(i).fullPiece);
+                }    
+            }/*end of for loop*/
+            file.close();
+            
+        }/*end of writeToDisk*/
+	
 }/*end of RUBTClient class*/
