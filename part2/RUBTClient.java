@@ -59,12 +59,13 @@ public class RUBTClient extends Thread{
 			return;
 		}
         
+        /*checks to see if the last arguement is a peer*/
         if (args.length == 3){
         	singlePeer = true;
         	singlePeerAddress = args[2];
         }
 		
-        String inFileName = args[0]; /*torrent file*/
+        	String inFileName = args[0]; /*torrent file*/
 		String outFileName = args[1]; /*file to output successful download to*/
 		
 		File torrentFile = new File(inFileName); /*torrent file stream*/
@@ -417,8 +418,6 @@ public class RUBTClient extends Thread{
             }    
         }/*end of for loop*/
         file.close();
-       
-        
     }/*end of writeToDisk*/
 	
 }/*end of RUBTClient class*/
