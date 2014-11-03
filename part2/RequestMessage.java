@@ -1,3 +1,9 @@
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
+
 public class RequestMessage extends Message{
 
 	/*integer specifying the zero-based piece index*/
