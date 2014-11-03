@@ -2,6 +2,13 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
+
+/*Class creates a Piece out of all the blocks requested from the peer*/
 public class Piece {
 
 	final int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
@@ -20,10 +27,13 @@ public class Piece {
 	
 	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
+	/*determines where we are on the last Piece*/
 	public boolean lastPiece;
 	
+	/*size of the blocks for the last pieces*/
 	public int lastBLOCKSIZE;
 	
+	/*index of the piece to be placed in the ArrayList*/
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
@@ -42,6 +52,7 @@ public class Piece {
 		}
 	}
 	
+	/*inserts the block into the arraylist of blocks*/
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException{
 		
 		if (numBlocks == totalBlocks || verified){
@@ -66,6 +77,7 @@ public class Piece {
 		
 	}/*end of insertBlock*/
 	
+	/*verifies the piece against the SHA1 info hash. Only occurs when all blocks complete the Piece*/
 	public boolean verifyPiece() throws UnsupportedEncodingException
 	{
 		if(blocks.size() != totalBlocks)
