@@ -24,11 +24,9 @@ public class TrackerResponseInfo {
 
     /*A string that the client should send back on it's next announcements*/
     public String trackerid;
-
-    /*number of peers with the entire file and number of non-seeder peers*/
-    public int complete, incomplete;
     
-    public int started, stopped; 
+    /*Response from tracker. Can be stopped, completed, or started*/
+    public String event; 
 
     /*Array list of Peer objects. Contains the peerid, port, and ip for each*/
     public ArrayList<Peer> peers;
@@ -38,11 +36,7 @@ public class TrackerResponseInfo {
 
     public final static ByteBuffer FAILURE_REASON = ByteBuffer.wrap(new byte[]{'f', 'a', 'i', 'l', 'u', 'r', 'e'});
 
-    public final static ByteBuffer COMPLETE = ByteBuffer.wrap(new byte[]{'c', 'o', 'm', 'p', 'l', 'e', 't', 'e'});
-
     public final static ByteBuffer TRACKER_ID = ByteBuffer.wrap(new byte[]{'t', 'r', 'a', 'c', 'k', 'e', 'r', 'i', 'd'});
-
-    public final static ByteBuffer INCOMPLETE = ByteBuffer.wrap(new byte[]{'i', 'n', 'c', 'o', 'm', 'p', 'l', 'e', 't', 'e'});
 
     public final ByteBuffer PEERS = ByteBuffer.wrap(new byte[]{'p', 'e', 'e', 'r', 's'});
 
@@ -52,14 +46,9 @@ public class TrackerResponseInfo {
 
     public final static ByteBuffer PORT = ByteBuffer.wrap(new byte[]{'p', 'o', 'r', 't'});
     
-    public final static ByteBuffer STARTED = ByteBuffer.wrap(new byte[]{'s', 't', 'a', 'r', 't', 'e', 'd'});
-    
-    public final static ByteBuffer STOPPED = ByteBuffer.wrap(new byte[]{'s', 't', 'o', 'p', 'p', 'e', 'd'});
-    
+    public final static ByteBuffer EVENT = ByteBuffer.wrap(new byte[]{'e', 'v', 'e', 'n', 't'});
 
-    /** 
-     * This class stores information from the tracker's response. 
-     * TrackerResponseInfo constructor
+    /*TrackerResponseInfo constructor
      * @param = tracker data in byte array
      */
     public TrackerResponseInfo(byte[] tracker_file_bytes) throws BencodingException, IOException {
@@ -76,40 +65,16 @@ public class TrackerResponseInfo {
         }
 
         if (!tracker_file_map.containsKey(INTERVAL)) {
-            this.interval = 0;
+            this.interval = 200;
             System.out.println("KEY IS 0");
         } else {
             this.interval = (Integer) tracker_file_map.get(INTERVAL);
         }
-
-        if (!tracker_file_map.containsKey(COMPLETE)) {
-            System.out.println("There are no peers with the entire file");
-            this.complete = 0;
-        } else {
-            this.complete = (Integer) tracker_file_map.get(COMPLETE);
-        }
-
-        if (!tracker_file_map.containsKey(INCOMPLETE)) {
-            this.incomplete = 0;
-            System.out.println("incomplete is zero");
-        } else {
-            this.incomplete = (Integer) tracker_file_map.get(INCOMPLETE);
-        }
         
-        if(!tracker_file_map.containsKey(STARTED))
-        {
-            this.started = 0;
-            System.out.println("started is zero");
-        }else{
-            this.started = (Integer) tracker_file_map.get(STARTED);
-        }
-        
-        if(!tracker_file_map.containsKey(STOPPED))
-        {
-            this.stopped = 0;
-            System.out.println("stopped is 0");
-        }else{
-            this.stopped = (Integer) tracker_file_map.get(STOPPED);
+        if (!tracker_file_map.containsKey(EVENT)) {
+        	this.event = "";
+        } else {
+        	this.event = (String) tracker_file_map.get(EVENT);
         }
 
         ArrayList<Map<ByteBuffer, Object>> peers = (ArrayList<Map<ByteBuffer, Object>>) tracker_file_map.get(this.PEERS);
@@ -132,9 +97,7 @@ public class TrackerResponseInfo {
 
     }
 
-    /**method to randomly generate peerid.
-     * @return byte array for the peer ID's 
-     * */
+    /*method to randomly generate peerid, not sure if necessary*/
     private byte[] generatePeerID() {
         byte[] peerid = new byte[20];
         peerid[0] = 'R';
