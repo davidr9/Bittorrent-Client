@@ -404,19 +404,20 @@ public class RUBTClient extends Thread{
         long index = 0;
         
         /*goes through pieces array and writes pieces to file*/
-        for(int i = 0; i < verifiedPieces.size()-1; i++)
-        {
+        for(int i = 0; i < verifiedPieces.size(); i++)
+        {   
             if(verifiedPieces.get(i) == null)
             {
                 continue;
             }else{
-                System.out.println("Writing to file");
-                index = (long) verifiedPieces.get(i).index;
+                /*writes to file if the index of the arraylist contains data*/
+                index = (long) verifiedPieces.get(i).index * verifiedPieces.get(i).fullPiece.length;
                 file.seek(index);
                 file.write(verifiedPieces.get(i).fullPiece);
             }    
         }/*end of for loop*/
         file.close();
+       
         
     }/*end of writeToDisk*/
 	
