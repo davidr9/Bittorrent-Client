@@ -97,7 +97,10 @@ public class TrackerResponseInfo {
 
     }
 
-    /*method to randomly generate peerid, not sure if necessary*/
+    /**
+    * method to randomly generate peerid, not sure if necessary
+    * @return byte array for the peer ID's 
+    */
     private byte[] generatePeerID() {
         byte[] peerid = new byte[20];
         peerid[0] = 'R';
