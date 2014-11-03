@@ -35,10 +35,10 @@ public class Peer extends Thread implements Runnable{
 	private boolean unchoked; /*true if peer has un-choked the host client*/
 	
 	private boolean isInterested = false; /*true if peer is interested in downloading from client*/
+
+	private long lastMessageSent; /*keeps track of the last message sent from peer*/
 	
-	private long lastMessageSent;
-	
-	private long beginTime;
+	private long beginTime; /*initial time used to time file download*/
 	
 	public Thread th; /*thread to run this peer*/
 	
@@ -46,11 +46,11 @@ public class Peer extends Thread implements Runnable{
 	
 	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
-	public static int pieceLength = RUBTClient.torrentData.piece_length;
+	public static int pieceLength = RUBTClient.torrentData.piece_length; /*length of a piece in the info_hash*/
 	
-	private static Timer peerTimer = new Timer(true);
+	private static Timer peerTimer = new Timer(true); /*Timer object used to keep track of the time*/
 	
-	volatile boolean finished = false;
+	volatile boolean finished = false; /*event that is updated when all pieces have been downloaded*/
 	
 	/**
 	 * Creates a new peer object
@@ -215,7 +215,6 @@ public class Peer extends Thread implements Runnable{
 	    	System.err.println("NO PEER ID ");
 	    	this.peerSocket.close();
 	    }
-
 		System.out.println("HANDSHAKE COMPLETE");
 		
 		return 0;
@@ -229,7 +228,9 @@ public class Peer extends Thread implements Runnable{
 		boolean readSuccessfully = false; /*true if peer successfully reads sent message*/
 		boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 
+		/*loop continues until all the pieces have been downloaded or user exits the program*/
 		while (!finished){
+			/*sending the initial interested message to the peers*/
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
 			lastMessageSent = System.currentTimeMillis();
@@ -238,9 +239,11 @@ public class Peer extends Thread implements Runnable{
 				continue;
 			}
 			
+			/*stores the response of the peer after the client sends a mssage*/
 			Message peerResponse = Message.readMessage(inputStream);
 			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 			
+			/*store bitfield response from peer*/
 			if (peerResponse.message_id == Message.bitfield){
 				BitfieldMessage bitResponse = (BitfieldMessage) peerResponse;
 				byte[] bitfield = bitResponse.getPieces();
@@ -251,6 +254,7 @@ public class Peer extends Thread implements Runnable{
 				unchoked = true;
 			}
 			
+			/*downloads pieces of the file while the peer is unchoked*/
 			while (unchoked){
 				
 				for (int i = 0; i < RUBTClient.numPieces; i++){
@@ -260,6 +264,7 @@ public class Peer extends Thread implements Runnable{
 						continue;
 					}
 					
+					/*creating pieces by instering blocks into a Piece object until complete*/
 					Piece completePiece = requestBlocks(i);
 					if (completePiece != null){
 						RUBTClient.verifiedPieces.set(i, completePiece);
@@ -384,7 +389,6 @@ public class Peer extends Thread implements Runnable{
 	 * Creates new thread with peerID as thread name. Begins downloading pieces from
 	 * thread, then closes socket and all streams when finished.
 	 */
-	
 	@Override
 	public void run(){
 		
@@ -441,6 +445,4 @@ public class Peer extends Thread implements Runnable{
 			}
 		}
 	}/*end of KeepAlive class*/
-	
-	
 }
