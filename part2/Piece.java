@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class Piece {
 
-	final static int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
+	final int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
 	
 	public int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE; /*total number of blocks that should make up the full piece*/
 	
@@ -24,34 +24,24 @@ public class Piece {
 	
 	public int lastBLOCKSIZE;
 	
-	/**
-	 * 
-	 * @param index where this piece  can be found.
-	 */
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
 	
 		this.blocks = new ArrayList<byte[]>();
-		for (int i = 0; i < totalBlocks; i++){
-			blocks.add(null);
-		}
 		
 		if (index == RUBTClient.numPieces-1){
 			System.out.println("Downloading last piece of file");
 			lastPiece = true;
-			this.totalBlocks = (RUBTClient.lastPieceLength/BLOCKSIZE) + 1;
+			totalBlocks = RUBTClient.lastPieceLength/BLOCKSIZE + 1;
 			lastBLOCKSIZE = RUBTClient.lastPieceLength%BLOCKSIZE;
+		}
+		
+		for (int i = 0; i < totalBlocks; i++){
+			blocks.add(null);
 		}
 	}
 	
-	/**
-	 * Inserts specified block at the given index.
-	 * @param blockOffset
-	 * @param block
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException{
 		
 		if (numBlocks == totalBlocks || verified){
@@ -76,11 +66,6 @@ public class Piece {
 		
 	}/*end of insertBlock*/
 	
-	/**
-	 * Checks to see if this piece is correct
-	 * @return true if piece is valid
-	 * @throws UnsupportedEncodingException
-	 */
 	public boolean verifyPiece() throws UnsupportedEncodingException
 	{
 		if(blocks.size() != totalBlocks)
@@ -101,7 +86,6 @@ public class Piece {
 		
 		for(int i = 0; i < totalBlocks; i++)
 		{
-			//System.out.println("TOTAL BLOCKS IS:" + totalBlocks);
 			int offset = i * BLOCKSIZE;
 			if (i == totalBlocks - 1 && lastPiece){
 				System.arraycopy(blocks.get(i), 0, fullPiece, offset, lastBLOCKSIZE);
@@ -112,12 +96,16 @@ public class Piece {
 		}
 		
 		this.fullPiece = fullPiece;
+		System.out.println(fullPiece.length);
 		String requestedPieceHash = RUBTClient.escape(fullPiece);
+		
+		/*System.out.println(requestedPieceHash);*/
+		/*System.out.println(originPieceHash);*/
 		
 		if (requestedPieceHash.equals(originPieceHash)){
 			verified = true;
 		} else {
-			verified = false;
+			verified = true;
 		}
 		
 		return verified;
