@@ -22,7 +22,7 @@ public class RUBTClient extends Thread{
 	
 	static int left;
 	
-	public static String event;
+	public static String event = "";
 	
 	public static int started;
 	
@@ -38,7 +38,9 @@ public class RUBTClient extends Thread{
 	
 	public static int lastPieceLength;
 	
-	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();;
+	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();
+	
+	public static int numPiecesVerified = 0;
 	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
@@ -46,16 +48,25 @@ public class RUBTClient extends Thread{
 	
 	private static List<Peer> connectedPeers;
 	
+	private static boolean singlePeer; /*If 3rd argument is specified as IPAddress, we only connect to this peer*/
+	
+	public static String singlePeerAddress; /*for 3rd argument if specified*/
+	
 	private static long beginTime;
 	
-	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException {
+	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
 		
 		/*Error handling when user enters incorrect number of arguments*/
-        if (args.length != 2)
+        if (args.length > 3)
 		{
 			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
 			return;
 		}
+        
+        if (args.length == 3){
+        	singlePeer = true;
+        	singlePeerAddress = args[2];
+        }
 		
         String inFileName = args[0]; /*torrent file*/
 		String outFileName = args[1]; /*file to output successful download to*/
@@ -80,6 +91,8 @@ public class RUBTClient extends Thread{
         pieces = torrentData.piece_hashes;
         pieceLength = torrentData.piece_length;
         left = torrentData.file_length;
+        downloaded = 0;
+        uploaded = 0;
  
         if (torrentData.file_length%torrentData.piece_length == 0){
         	numPieces = torrentData.file_length/torrentData.piece_length;
@@ -88,13 +101,22 @@ public class RUBTClient extends Thread{
         	lastPieceLength = torrentData.file_length%torrentData.piece_length;
         }
         
+        System.out.println("Numpieces is " + numPieces);
+        System.out.println("lastPieceLength is " + lastPieceLength);
+        
         for (int i = 0; i < numPieces; i++){
         	verifiedPieces.add(null);
         }
        
-        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/   
-        connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
+        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/ 
         
+        if (singlePeer){
+        	connectToPeer(peers, singlePeerAddress);
+        } else {
+        	connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
+        }
+        System.out.println("VAGINA VAGINA VAGINA VAGINA");
+        writeToDisk(outFileName);
         
 	}/*end of main method*/
 
@@ -167,11 +189,13 @@ public class RUBTClient extends Thread{
     	String escapedInfoHash = escape(tInfo.info_hash.array()); /*escaped version of info_hash*/
     	String escapedPeerID = escape(clientID); /*escaped version of id*/
     	String port = Integer.toString(extractPort(tInfo.announce_url));
-    	String left = Integer.toString(tInfo.file_length); /*initially set as the size of the file to be downloaded*/
-   
+    	String l = Integer.toString(left); /*initially set as the size of the file to be downloaded*/
+    	String d = Integer.toString(downloaded);
+    	String u = Integer.toString(uploaded);
+    	
     	/*concatenate data into proper URL format*/
     	workingURL = workingURL + "info_hash" + "=" + escapedInfoHash + "&peer_id=" + escapedPeerID + "&port="
-    			+ port + "&uploaded=0&downloaded=0&left=" + left;
+    			+ port + "&uploaded=" + u + "&downloaded=" + d + "&left=" + l + "&event=" + event;
     	
     	try {
     		URL finalURL = new URL(workingURL);
@@ -232,7 +256,12 @@ public class RUBTClient extends Thread{
     }/*end of findPeerList method*/
     
     /*
-     * Returns the first peer whose peer_id prefix is "RUBT11"
+     * Returns the first peer whose IPAddress is valid
+     * 
+     * @param peers arraylist of peers retrieved from tracker
+     * @param start index from which to begin searching within peers
+     * 
+     * @return peer object with given IPAddress
      */
     private static Peer choosePeer(ArrayList<Peer> peers, int start) throws UnsupportedEncodingException {
 		
@@ -251,7 +280,7 @@ public class RUBTClient extends Thread{
 		return url.getPort();
 	}
     
-    private static void connectToPeers(ArrayList<Peer> peers) throws SocketException, IOException{
+    private static void connectToPeers(ArrayList<Peer> peers) throws SocketException, IOException, InterruptedException{
     	
     	connectedPeers = new ArrayList<Peer>();
     	System.out.println(peers.size());
@@ -264,9 +293,34 @@ public class RUBTClient extends Thread{
 			}
     	}
     	
-    	int connected = 0;
+    	beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
+    	event = "started";
     	
-    	beginTime = System.nanoTime(); /*This is where we will begin to time the download*/
+    	for (int i = 0; i < connectedPeers.size(); i++){
+			connectedPeers.get(i).startThread();
+		}
+    	
+    	for (int i = 0; i < connectedPeers.size(); i++){
+    		connectedPeers.get(i).th.join();
+    	}
+    } /*end of connectToPeers method*/
+    
+    private static void connectToPeer(ArrayList<Peer> peers, String ipAddress) throws SocketException, IOException{
+    	
+    	connectedPeers = new ArrayList<Peer>();
+    	System.out.println(peers.size());
+    	
+    	for (int i = 0; i < peers.size(); i++){
+			String ip = peers.get(i).getIP();
+			if (ip.equals(ipAddress)){
+				connectedPeers.add(peers.get(i));
+				System.out.println("Added peer at " + peers.get(i).getIP());
+				break;
+			}
+    	}
+    	
+    	beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
+    	event = "started";
     	
     	for (int i = 0; i < connectedPeers.size(); i++){
 				connectedPeers.get(i).startThread();
@@ -290,7 +344,6 @@ public class RUBTClient extends Thread{
 		for (int byteIndex = 0; byteIndex < bits.length; ++byteIndex) {
 			for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
 				if (boolIndex >= significantBits) {
-					// Bad to return within a loop, but it's the easiest way
 					return retVal;
 				}
 
@@ -301,31 +354,31 @@ public class RUBTClient extends Thread{
 	}
 	
 	/*Goes through arraylist of pieces and writes all pieces to file*/
-        public static void writeToDisk(String outFile) throws FileNotFoundException, IOException
+    public static void writeToDisk(String outFile) throws FileNotFoundException, IOException
+    {
+        /*outFile is the name you want to save the file to*/
+        RandomAccessFile file = new RandomAccessFile(outFile, "rw");
+        long len = numPieces * pieceLength; 
+        /*sets the file length*/
+        file.setLength(len);
+        /*index in which the byte[] will be written*/
+        long index = 0;
+        
+        /*goes through pieces array and writes pieces to file*/
+        for(int i = 0; i < verifiedPieces.size()-1; i++)
         {
-            /*outFile is the name you want to save the file to*/
-            RandomAccessFile file = new RandomAccessFile(outFile, "rw");
-            long len = numPieces * pieceLength; 
-            /*sets the file length*/
-            file.setLength(len);
-            /*index in which the byte[] will be written*/
-            long index = 0;
-            
-            /*goes through pieces array and writes pieces to file*/
-            for(int i = 0; i < verifiedPieces.size()-1; i++)
+            if(verifiedPieces.get(i) == null)
             {
-                if(verifiedPieces.get(i) == null)
-                {
-                    continue;
-                }else{
-                    System.out.println("Writing to file");
-                    index = (long) verifiedPieces.get(i).index;
-                    file.seek(index);
-                    file.write(verifiedPieces.get(i).fullPiece);
-                }    
-            }/*end of for loop*/
-            file.close();
-            
-        }/*end of writeToDisk*/
+                continue;
+            }else{
+                System.out.println("Writing to file");
+                index = (long) verifiedPieces.get(i).index;
+                file.seek(index);
+                file.write(verifiedPieces.get(i).fullPiece);
+            }    
+        }/*end of for loop*/
+        file.close();
+        
+    }/*end of writeToDisk*/
 	
 }/*end of RUBTClient class*/
