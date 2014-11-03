@@ -1,14 +1,9 @@
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
-/**
-* @author Julie Duncan
-* @author David Rubin
-* @author Rosheen Chaudhry
-*/
-
-/*Class creates a Piece out of all the blocks requested from the peer*/
 public class Piece {
 
 	final int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
@@ -27,13 +22,10 @@ public class Piece {
 	
 	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
-	/*determines where we are on the last Piece*/
 	public boolean lastPiece;
 	
-	/*size of the blocks for the last pieces*/
 	public int lastBLOCKSIZE;
 	
-	/*index of the piece to be placed in the ArrayList*/
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
@@ -52,8 +44,7 @@ public class Piece {
 		}
 	}
 	
-	/*inserts the block into the arraylist of blocks*/
-	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException{
+	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
 		if (numBlocks == totalBlocks || verified){
 			System.err.println("Piece " + index + "already has all of its blocks");
@@ -77,8 +68,7 @@ public class Piece {
 		
 	}/*end of insertBlock*/
 	
-	/*verifies the piece against the SHA1 info hash. Only occurs when all blocks complete the Piece*/
-	public boolean verifyPiece() throws UnsupportedEncodingException
+	public boolean verifyPiece() throws UnsupportedEncodingException, NoSuchAlgorithmException
 	{
 		if(blocks.size() != totalBlocks)
 		{
@@ -109,15 +99,20 @@ public class Piece {
 		
 		this.fullPiece = fullPiece;
 		System.out.println(fullPiece.length);
-		String requestedPieceHash = RUBTClient.escape(fullPiece);
 		
-		/*System.out.println(requestedPieceHash);*/
-		/*System.out.println(originPieceHash);*/
+		
+		MessageDigest convert = MessageDigest.getInstance("SHA-1");
+		convert.update(fullPiece);
+		byte[] newPieceHash = convert.digest();
+		String requestedPieceHash = RUBTClient.escape(newPieceHash);
+		
+		System.out.println(requestedPieceHash);
+		System.out.println(originPieceHash);
 		
 		if (requestedPieceHash.equals(originPieceHash)){
 			verified = true;
 		} else {
-			verified = true;
+			verified = false;
 		}
 		
 		return verified;
