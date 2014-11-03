@@ -6,7 +6,7 @@ public class Piece {
 
 	final static int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
 	
-	public static int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE;; /*total number of blocks that should make up the full piece*/
+	public int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE; /*total number of blocks that should make up the full piece*/
 	
 	private ByteBuffer requestedPiece; /*the expected SHA-1 hash of the piece*/
 	
@@ -20,9 +20,25 @@ public class Piece {
 	
 	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
+	public boolean lastPiece;
+	
+	public int lastBLOCKSIZE;
+	
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
+	
+		this.blocks = new ArrayList<byte[]>();
+		for (int i = 0; i < totalBlocks; i++){
+			blocks.add(null);
+		}
+		
+		if (index == RUBTClient.numPieces-1){
+			System.out.println("Downloading last piece of file");
+			lastPiece = true;
+			totalBlocks = RUBTClient.lastPieceLength/BLOCKSIZE + 1;
+			lastBLOCKSIZE = RUBTClient.lastPieceLength%BLOCKSIZE;
+		}
 	}
 	
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException{
@@ -38,7 +54,7 @@ public class Piece {
 			return false;
 		}
 		
-		blocks.add(index, block);
+		blocks.set(index, block);
 		numBlocks++;
 		if(numBlocks == totalBlocks)
 		{
@@ -58,12 +74,24 @@ public class Piece {
 		}
 		
 		String originPieceHash = RUBTClient.escape(requestedPiece.array());
-		byte[] fullPiece = new byte[BLOCKSIZE*totalBlocks];
+		byte[] fullPiece;
 		
-		for(int i = 0; i < blocks.size(); i++)
+		if (lastPiece){
+			fullPiece = new byte[BLOCKSIZE*(totalBlocks - 1) + lastBLOCKSIZE];
+		} else {
+			fullPiece = new byte[BLOCKSIZE*totalBlocks];
+		}
+		
+		
+		for(int i = 0; i < totalBlocks; i++)
 		{
 			int offset = i * BLOCKSIZE;
-			System.arraycopy(blocks.get(i), 0, fullPiece, offset, BLOCKSIZE);
+			if (i == totalBlocks - 1){
+				System.arraycopy(blocks.get(i), 0, fullPiece, offset, lastBLOCKSIZE);
+			} else {
+				System.arraycopy(blocks.get(i), 0, fullPiece, offset, BLOCKSIZE);
+			}
+	
 		}
 		
 		this.fullPiece = fullPiece;
