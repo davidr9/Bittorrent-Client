@@ -4,6 +4,12 @@ import java.util.ArrayList;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
+
 public class Piece {
 
 	final int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
@@ -22,10 +28,11 @@ public class Piece {
 	
 	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
-	public boolean lastPiece;
+	public boolean lastPiece; /*determines whether the current Piece is the last piece*?
 	
-	public int lastBLOCKSIZE;
+	public int lastBLOCKSIZE; /*stores the size of each block for the last piece*/
 	
+	/*constructor takes the index in which the piece will be placed into an arraylist*/
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
@@ -39,6 +46,7 @@ public class Piece {
 			lastBLOCKSIZE = RUBTClient.lastPieceLength%BLOCKSIZE;
 		}
 		
+		/*intitializes the blocks arraylist to null*/
 		for (int i = 0; i < totalBlocks; i++){
 			blocks.add(null);
 		}
@@ -91,13 +99,14 @@ public class Piece {
 		String originPieceHash = RUBTClient.escape(requestedPiece.array());
 		byte[] fullPiece;
 		
+		/*gets the size of the piece for both regular pieces or the last piece*/
 		if (lastPiece){
 			fullPiece = new byte[BLOCKSIZE*(totalBlocks - 1) + lastBLOCKSIZE];
 		} else {
 			fullPiece = new byte[BLOCKSIZE*totalBlocks];
 		}
 		
-		
+		/*copies the arraylist into an array*/
 		for(int i = 0; i < totalBlocks; i++)
 		{
 			int offset = i * BLOCKSIZE;
@@ -112,7 +121,7 @@ public class Piece {
 		this.fullPiece = fullPiece;
 		System.out.println(fullPiece.length);
 		
-		
+		/*verifies the piece with the SHA1 hash*/
 		MessageDigest convert = MessageDigest.getInstance("SHA-1");
 		convert.update(fullPiece);
 		byte[] newPieceHash = convert.digest();
