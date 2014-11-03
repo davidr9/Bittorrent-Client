@@ -1,4 +1,5 @@
 
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.net.*;
 import java.io.*;
@@ -35,10 +36,8 @@ public class Peer extends Thread implements Runnable{
 	
 	private boolean isInterested = false; /*true if peer is interested in downloading from client*/
 	
-	/*index of the last message that was sent*/
 	private long lastMessageSent;
 	
-	/*begining time for when client downloads*/
 	private long beginTime;
 	
 	public Thread th; /*thread to run this peer*/
@@ -47,10 +46,8 @@ public class Peer extends Thread implements Runnable{
 	
 	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
-	/*length of a single piece of the file*/
 	public static int pieceLength = RUBTClient.torrentData.piece_length;
 	
-	/*creates Timer to time download and uploads*/
 	private static Timer peerTimer = new Timer(true);
 	
 	volatile boolean finished = false;
@@ -76,6 +73,7 @@ public class Peer extends Thread implements Runnable{
 	
 	/*
 	 * Find private variable IP address
+	 * 
 	 * @return IP address of peer as string
 	 */
 	public String getIP(){
@@ -84,6 +82,7 @@ public class Peer extends Thread implements Runnable{
 	
 	/*
 	 * Find private variable port number
+	 * 
 	 * @return port number as integer
 	 */
 	public int getPort(){
@@ -92,6 +91,7 @@ public class Peer extends Thread implements Runnable{
 	
 	/*
 	 * Open a TCP socket on the local machine to contact the peer using the TCP peer protocol
+	 * 
 	 * @return true if success, false otherwise
 	 */
 	public boolean openSocket(){
@@ -224,49 +224,43 @@ public class Peer extends Thread implements Runnable{
 	/*
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
-	private void downloadPieces() throws EOFException, IOException{
+	private void downloadPieces() throws EOFException, IOException, NoSuchAlgorithmException{
 		
 		boolean readSuccessfully = false; /*true if peer successfully reads sent message*/
 		boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 
-		/*continues downloading pieces until all pieces are downloaded*/
 		while (!finished){
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
 			lastMessageSent = System.currentTimeMillis();
 			
-			/*resends interested message if message was not read successfully*/
 			if (!readSuccessfully){
 				continue;
 			}
-			/*stores the Peer's response to a message*/
+			
 			Message peerResponse = Message.readMessage(inputStream);
 			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 			
-			/*reads bitfield message and determines which pieces the peer has*/
 			if (peerResponse.message_id == Message.bitfield){
 				BitfieldMessage bitResponse = (BitfieldMessage) peerResponse;
 				byte[] bitfield = bitResponse.getPieces();
 				whichPieces = RUBTClient.convertBitfield(bitfield, bitfield.length * 8);				
 			}
 			
-			/*unchokes the peer if unchoke message is read by client*/
 			if (peerResponse.message_id == Message.unchoke){
 				unchoked = true;
 			}
 			
-			/*downloads pieces while the peer is unchoked*/
 			while (unchoked){
-				/*stores all piece objects in an arraylist*/
+				
 				for (int i = 0; i < RUBTClient.numPieces; i++){
-					/*goes to the next piece if we already have the pieces*/
+					
 					if (RUBTClient.verifiedPieces.get(i) != null || whichPieces[i] == false){
 						System.out.println(RUBTClient.verifiedPieces.get(i).fullPiece.length);
 						continue;
 					}
-					/*gets the blocks that makes up a piece and returns is in the correct order*/
+					
 					Piece completePiece = requestBlocks(i);
-					/*inserts the piece into the arraylist and changes announce events*/
 					if (completePiece != null){
 						RUBTClient.verifiedPieces.set(i, completePiece);
 						RUBTClient.numPiecesVerified++;
@@ -274,7 +268,6 @@ public class Peer extends Thread implements Runnable{
 						RUBTClient.left -= completePiece.fullPiece.length;
 						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
 						
-						/*when all the pieces are downloaded*/
 						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
 							RUBTClient.event = "completed";
 							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED HOOOOORAYYYY");
@@ -285,6 +278,7 @@ public class Peer extends Thread implements Runnable{
 							break;
 						}
 					}
+					
 				}/*end of for*/
 				
 				peerResponse = Message.readMessage(inputStream);
@@ -299,8 +293,7 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of downloadPieces*/
 	
-	
-	public Piece requestBlocks(int piece) throws IOException{
+	public Piece requestBlocks(int piece) throws IOException, NoSuchAlgorithmException{
 		
 		boolean readSuccessfully;
 		boolean pieceVerified = false;
@@ -366,6 +359,7 @@ public class Peer extends Thread implements Runnable{
 	
 	/*
 	 * Creates new thread for Runnable Peer and starts it
+	 * 
 	 * @throws UnsupportedEncodingException for escape 
 	 */
 	public void startThread() throws UnsupportedEncodingException{
@@ -379,6 +373,7 @@ public class Peer extends Thread implements Runnable{
 	
 	/*
 	 * Run function for peer threads.
+	 * 
 	 * Creates new thread with peerID as thread name. Begins downloading pieces from
 	 * thread, then closes socket and all streams when finished.
 	 */
@@ -391,7 +386,7 @@ public class Peer extends Thread implements Runnable{
 		int connected;
 		
 		try {	
-			/*sends the initial handshake to all the peers*/
+			
 			connected = shakeHand();
 			if (connected == -1){
 				System.err.print("Could not connect with peer " + IPAddress);
@@ -410,6 +405,8 @@ public class Peer extends Thread implements Runnable{
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
 		}
 		
 		try {
@@ -434,4 +431,6 @@ public class Peer extends Thread implements Runnable{
 			}
 		}
 	}/*end of KeepAlive class*/
-}/*end of Peer class*/
+	
+	
+}
