@@ -24,6 +24,10 @@ public class Piece {
 	
 	public int lastBLOCKSIZE;
 	
+	/**
+	 * 
+	 * @param index where this piece  can be found.
+	 */
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
@@ -36,11 +40,18 @@ public class Piece {
 		if (index == RUBTClient.numPieces-1){
 			System.out.println("Downloading last piece of file");
 			lastPiece = true;
-			totalBlocks = RUBTClient.lastPieceLength/BLOCKSIZE + 1;
+			this.totalBlocks = (RUBTClient.lastPieceLength/BLOCKSIZE) + 1;
 			lastBLOCKSIZE = RUBTClient.lastPieceLength%BLOCKSIZE;
 		}
 	}
 	
+	/**
+	 * Inserts specified block at the given index.
+	 * @param blockOffset
+	 * @param block
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException{
 		
 		if (numBlocks == totalBlocks || verified){
@@ -65,6 +76,11 @@ public class Piece {
 		
 	}/*end of insertBlock*/
 	
+	/**
+	 * Checks to see if this piece is correct
+	 * @return true if piece is valid
+	 * @throws UnsupportedEncodingException
+	 */
 	public boolean verifyPiece() throws UnsupportedEncodingException
 	{
 		if(blocks.size() != totalBlocks)
@@ -85,8 +101,9 @@ public class Piece {
 		
 		for(int i = 0; i < totalBlocks; i++)
 		{
+			//System.out.println("TOTAL BLOCKS IS:" + totalBlocks);
 			int offset = i * BLOCKSIZE;
-			if (i == totalBlocks - 1){
+			if (i == totalBlocks - 1 && lastPiece){
 				System.arraycopy(blocks.get(i), 0, fullPiece, offset, lastBLOCKSIZE);
 			} else {
 				System.arraycopy(blocks.get(i), 0, fullPiece, offset, BLOCKSIZE);
