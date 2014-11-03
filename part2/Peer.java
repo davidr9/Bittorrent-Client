@@ -293,6 +293,13 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of downloadPieces*/
 	
+	
+	/**
+	 * Sends a request message for blocks within the specified piece.
+	 * @param piece
+	 * @return
+	 * @throws IOException
+	 */
 	public Piece requestBlocks(int piece) throws IOException, NoSuchAlgorithmException{
 		
 		boolean readSuccessfully;
@@ -418,7 +425,10 @@ public class Peer extends Thread implements Runnable{
 		}
 	} /*end of run*/
 	
-	/*specific timer task subclass used to send keep-alive message to peer every two minutes*/
+	/**
+	*
+	* specific timer task subclass used to send keep-alive message to peer every two minutes
+	*/
 	class KeepAlive extends TimerTask {
 		public void run(){
 			
