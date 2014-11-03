@@ -1,15 +1,15 @@
-/**
- * @author Julie Duncan
- * @author David Rubin
- * @author Rosheen Chaudhry
- */
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-/*
+
+/**
  * A class represented as a stream of bytes to communicate messages between peers
+ * @author julieduncan
+ * @author davidrubin
+ * @author rosheenchaudhry
  */
 public class Message {
 
@@ -63,21 +63,37 @@ public class Message {
 		public static final Message uninterested_message = new Message(1, un_interested);
 		public static final Message interested_message = new Message(1, interested);
 		
-		/* length prefix is a 4-byte big-endian value and message ID is a single byte.*/
+		/**
+		 *  length prefix is a 4-byte big-endian value and message ID is a single byte.
+		 *  
+		 **/
 		public Message(int length_prefix, byte message_id){
 			this.length = length_prefix;
 			this.message_id = message_id;
 		}
 		
+		/**
+		 * 
+		 * @return byte array representing the messageID.
+		 */
 		public byte getID(){
 			return this.message_id;
 		}
 		
+		/**
+		 * 
+		 * @return integer representing the length of this message
+		 */
 		public int getLength(){
 			return this.length;
 		}
 		
-		/*Convert length-prefix integer to byte array and add it as the prefix for the message*/
+		/**
+		 *Convert length-prefix integer to byte array and add it as the prefix for the message 
+		 * @param base10
+		 * @param result
+		 * @return byte array representing the message prefix
+		 */
 		public static byte[] addLengthPrefix(int base10, byte[] result) {
 			result[0] = (byte) (base10 >> 24);
 			result[1] = (byte) (base10 >> 16);
@@ -86,7 +102,8 @@ public class Message {
 			return result;
 		}
 		
-		/*Perform handshake
+		/**
+		 * Perform handshake
 		 * The handshake is the first message transmitted by the client.
 		 * <pstrlen> is a string length of <pstr> and it is a single byte.
 		 * <pstr> is the string identifier of the protocol.
@@ -135,7 +152,11 @@ public class Message {
 		}
 		
 
-		
+		/**
+		 * Takes a message ID and returns a human readable string to identify the message.
+		 * @param id
+		 * @return string representation of a particular message.
+		 */
 		public static String getMessageName(byte id){
 			if(id==0){
 				return "Choke";
@@ -168,7 +189,12 @@ public class Message {
 			}
 		}
 
-		
+		/**
+		 * Reads a message provided in datainputstream. 
+		 * @param data_input
+		 * @return Message
+		 * @throws IOException
+		 */
 		public static Message readMessage(DataInputStream data_input) throws IOException{
 			
 			/*read the data_input length*/
@@ -253,7 +279,12 @@ public class Message {
 			
 		}
 		
-		/*Writes the message to the outputstream and returns the number of bytes written. */
+		/**Writes the message to the outputstream and returns the number of bytes
+		 * written.
+		 * @param data_output
+		 * @param message
+		 * @return boolean representing whether or not message was succesfully written.
+		 *  */
 		public static boolean writeMessage(DataOutputStream data_output, Message message) throws IOException{
 			
 			if(message==null){
@@ -300,6 +331,9 @@ public class Message {
 			return true;
 		}
 		
+		/**
+		 * @return String representation of a particular message.
+		 */
 		public String toString(){
 			if(this.message_id == Message.keep_alive){
 				return "keep alive";
@@ -309,7 +343,10 @@ public class Message {
 			return str;
 		}
 			
-		/*Get the payload from a Have or Request message received from the peer*/
+		/**Get the payload from a Have or Request message received from the 
+		 * peer
+		 * @return byte array 
+		 * */
 		public byte[] getPayload(){
 			byte[] payload = null;
 			
