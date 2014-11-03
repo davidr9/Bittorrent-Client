@@ -30,15 +30,19 @@ public class Peer extends Thread implements Runnable{
 	
 	private boolean hand_shook = false; /*true if handshake with peer is completes successfully*/
 	
-	private boolean unchoked;
+	private boolean unchoked; /*true if peer has un-choked the host client*/
 	
-	private boolean isInterested = false;
+	private boolean isInterested = false; /*true if peer is interested in downloading from client*/
 	
-	private Thread th;
+	private long lastMessageSent;
 	
-	private String tName;
+	private long beginTime;
 	
-	final int BLOCKSIZE = 16384;
+	private Thread th; /*thread to run this peer*/
+	
+	private String tName; /*name of thread for this peer*/
+	
+	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
 	public static int pieceLength = RUBTClient.torrentData.piece_length;
 	
@@ -211,18 +215,6 @@ public class Peer extends Thread implements Runnable{
 		return 0;
 	}
 	
-	public byte[] storeResponse(byte[] response){
-		try {
-			this.inputStream.readFully(response);
-			this.peerSocket.setSoTimeout(130000);
-			
-		} catch (IOException e) {
-			System.err.print("COULD NOT READ RESPONSE");
-			return null;
-		}	
-		return response;
-	}
-	
 	/*
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
@@ -235,9 +227,8 @@ public class Peer extends Thread implements Runnable{
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
 			
-			if (readSuccessfully){
-				isInterested = true;
-			} else {
+			
+			if (!readSuccessfully){
 				continue;
 			}
 			
@@ -257,15 +248,16 @@ public class Peer extends Thread implements Runnable{
 			while (unchoked){
 				
 				for (int i = 0; i < RUBTClient.numPieces; i++){
-					RUBTClient.verifiedPieces.ensureCapacity(i+1);
-					System.out.println("Length of verifiedPieces is " + RUBTClient.verifiedPieces.size());
+					
 					if (RUBTClient.verifiedPieces.get(i) != null || whichPieces[i] == false){
 						continue;
 					}
 					
 					Piece completePiece = requestBlocks(i);
 					if (completePiece != null){
-						RUBTClient.verifiedPieces.add(i, completePiece);
+						RUBTClient.verifiedPieces.set(i, completePiece);
+						RUBTClient.downloaded += completePiece.fullPiece.length;
+						RUBTClient.left -= completePiece.fullPiece.length;
 					}
 					
 				}
@@ -285,7 +277,15 @@ public class Peer extends Thread implements Runnable{
 		/*sending a request for each block to the peer*/
 		for (int i = 0; i < newPiece.totalBlocks; i++){
 			int offset = BLOCKSIZE*i;
-			RequestMessage rmessage = new RequestMessage(piece, offset, BLOCKSIZE);
+			
+			RequestMessage rmessage;
+			
+			if (newPiece.lastPiece){
+				rmessage = new RequestMessage(piece, offset, newPiece.lastBLOCKSIZE);
+			} else {
+				rmessage = new RequestMessage(piece, offset, BLOCKSIZE);
+			}
+			
 			readSuccessfully = Message.writeMessage(outputStream, rmessage);
 			if (!readSuccessfully){
 				System.err.println("Could not read block from piece " + piece);
