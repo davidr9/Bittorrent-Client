@@ -28,7 +28,7 @@ public class Piece {
 	
 	public boolean verified; /*true if full piece has been verified and saved by client*/
 	
-	public boolean lastPiece; /*determines whether the current Piece is the last piece*?
+	public boolean lastPiece; /*determines whether the current Piece is the last piece*/
 	
 	public int lastBLOCKSIZE; /*stores the size of each block for the last piece*/
 	
