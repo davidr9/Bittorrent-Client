@@ -14,50 +14,46 @@ import java.nio.*;
 
 public class RUBTClient extends Thread{
 	
-	private static int port;
+	private static int port; /*Port on which this client is downloading/uploading*/
 	
-	static int uploaded;
+	static int uploaded; /*keeps track of how much of the file has been uploaded to other peers, in bytes*/
 	
-	static int downloaded;
+	static int downloaded; /*keeps track of how much of the file has been successfully downloaded from other peers, in bytes*/
 	
-	static int left;
+	static int left; /*keeps track of how much of the file still needs to be written, in bytes*/
 	
-	public static String event = "";
+	public static String event = ""; /*"started" when client starts, "completed" when download completes, or "stopped" when downloading ceases. Empty o/w*/
 	
-	public static int started;
+	public static ByteBuffer[] pieces; /*Expected SHA-1 hashes of each piece of the file given from the torrent*/
 	
-	public static int stopped;
+	public static int numPieces; /*Number of pieces to download form the file*/
 	
-	public static int completed;
+	public static int pieceLength; /*default length of each piece*/
 	
-	public static ByteBuffer[] pieces;
+	public static int lastPieceLength; /*length of last piece if smaller than the rest*/
 	
-	public static int numPieces;
+	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>(); /*shared array list for all already verified pieces*/
 	
-	public static int pieceLength;
-	
-	public static int lastPieceLength;
-	
-	public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>();
-	
-	public static int numPiecesVerified = 0;
+	public static int numPiecesVerified = 0; /*number of pieces verified thus far*/
 	
 	public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
 	
 	public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
 	
-	private static List<Peer> connectedPeers;
+	private static List<Peer> connectedPeers; /*Peers to attempt connections with from the peer list given by the torrent*/
 	
 	private static boolean singlePeer; /*If 3rd argument is specified as IPAddress, we only connect to this peer*/
 	
 	public static String singlePeerAddress; /*for 3rd argument if specified*/
 	
-	private static long beginTime;
+	private static long beginTime; /*time the download started*/
+	
+	private static long downloadTime; /*time it took to download during this session*/
 	
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
 		
 		/*Error handling when user enters incorrect number of arguments*/
-        if (args.length > 3)
+        if (args.length > 3 || args.length < 2)
 		{
 			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
 			return;
@@ -119,7 +115,12 @@ public class RUBTClient extends Thread{
         
 	}/*end of main method*/
 
-	/*parses the data in the torrent file given by the user*/
+	/*
+	 * parses the data in the torrent file given by the user
+	 * 
+	 * @param torrentFile name of torrent file to be parsed
+	 * @return torrent info object with all parsed info
+	 * */
     private static TorrentInfo torrentParser(File torrentFile) throws BencodingException, FileNotFoundException, IOException{
                 try {
                 		/*Create streams*/
@@ -151,7 +152,12 @@ public class RUBTClient extends Thread{
 
      }/*end of torrentParser method*/
 
-    /*sends an HTTP GET request to the tracker and creates connection.*/
+    /*
+     * sends an HTTP GET request to the tracker and creates connection
+     * 
+     * @param tInfo contains all info from torrent
+     * @return Array List of peers given by tracker
+     */
     private static ArrayList<Peer> sendRequestToTracker(TorrentInfo tInfo) 
     		throws MalformedURLException, IOException, UnknownHostException{
        
@@ -181,7 +187,12 @@ public class RUBTClient extends Thread{
         
     }/*end of sendRequestToTracker method*/
     
-    /*Concatenates string with relevant data into proper URL format and returns equivalent URL*/
+    /*
+     * Concatenates string with relevant data into proper URL format and returns equivalent URL
+     * 
+     * @param tInfo contains all info from torrent
+     * @return finished URL
+     */
     private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
     	String workingURL = tInfo.announce_url.toString() + '?'; /*base URL*/
     	
@@ -206,7 +217,12 @@ public class RUBTClient extends Thread{
     }/*end of createURL method*/
     
     
-    /*Converts into hex. This is decoding the SHA1*/
+    /*
+     * Converts a byte array into hex. This is decoding the SHA1
+     * 
+     * @param unEscaped byte array to be converted
+     * @return string representation of SHA-1 hash
+     * */
     public static String escape(byte[] unEscaped) throws UnsupportedEncodingException{
             String result = ""; //empty string to build upon and return
             char[] hexDigits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}; //list of possible hex digits in base 16
@@ -279,6 +295,11 @@ public class RUBTClient extends Thread{
 		return url.getPort();
 	}
     
+    /*
+     * Connects to peers at a specific IP address and starts threads for each. Joins threads upon completion and prints total download time
+     * 
+     * @param peers list of all peers from tracker
+     */
     private static void connectToPeers(ArrayList<Peer> peers) throws SocketException, IOException, InterruptedException{
     	
     	connectedPeers = new ArrayList<Peer>();
@@ -302,9 +323,19 @@ public class RUBTClient extends Thread{
     	for (int i = 0; i < connectedPeers.size(); i++){
     		connectedPeers.get(i).th.join();
     	}
+    	
+    	downloadTime = System.currentTimeMillis() - beginTime;
+    	System.out.println("Total time of download: " + downloadTime + " ms");
+    	
     } /*end of connectToPeers method*/
     
-    private static void connectToPeer(ArrayList<Peer> peers, String ipAddress) throws SocketException, IOException{
+    /*
+     * Connects to single specific peer at IP address given by command line. Otherwise, does the same as connectToPeers()
+     * 
+     * @param peers list of all peers form tracker
+     * @param ipAddress IP address of peer to communicate with
+     */
+    private static void connectToPeer(ArrayList<Peer> peers, String ipAddress) throws SocketException, IOException, InterruptedException{
     	
     	connectedPeers = new ArrayList<Peer>();
     	System.out.println(peers.size());
@@ -324,6 +355,13 @@ public class RUBTClient extends Thread{
     	for (int i = 0; i < connectedPeers.size(); i++){
 				connectedPeers.get(i).startThread();
 		}
+    	
+    	for (int i = 0; i < connectedPeers.size(); i++){
+    		connectedPeers.get(i).th.join();
+    	}
+    	
+    	downloadTime = System.currentTimeMillis() - beginTime;
+    	System.out.println("Total time of download: " + downloadTime + " ms");
     } /*end of connectToPeers method*/
     
     /*Prints the connection information to the tracker*/
@@ -332,9 +370,7 @@ public class RUBTClient extends Thread{
 		System.out.println("Uploaded: " + uploaded);
 		System.out.println("Downloaded: " + downloaded);
 		System.out.println("Left: " + left); 
-		System.out.println("Completed: " + completed);
-		System.out.println("Started: " + started);
-		System.out.println("Stopped: " + stopped);
+		System.out.println("Event: " + event);
 	}/*end of publishTrackerInfo*/
 	
 	public static boolean[] convertBitfield(byte[] bits, int significantBits) {
@@ -352,7 +388,11 @@ public class RUBTClient extends Thread{
 		return retVal;
 	}
 	
-	/*Goes through arraylist of pieces and writes all pieces to file*/
+	/*
+	 * Goes through array list of verified pieces and writes all pieces to file
+	 * 
+	 * @param outFile name of file to write to given by command line
+	 */
     public static void writeToDisk(String outFile) throws FileNotFoundException, IOException
     {
         /*outFile is the name you want to save the file to*/
