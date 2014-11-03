@@ -57,7 +57,9 @@ public class TrackerResponseInfo {
     public final static ByteBuffer STOPPED = ByteBuffer.wrap(new byte[]{'s', 't', 'o', 'p', 'p', 'e', 'd'});
     
 
-    /*TrackerResponseInfo constructor
+    /** 
+     * This class stores information from the tracker's response. 
+     * TrackerResponseInfo constructor
      * @param = tracker data in byte array
      */
     public TrackerResponseInfo(byte[] tracker_file_bytes) throws BencodingException, IOException {
@@ -130,7 +132,9 @@ public class TrackerResponseInfo {
 
     }
 
-    /*method to randomly generate peerid, not sure if necessary*/
+    /**method to randomly generate peerid.
+     * @return byte array for the peer ID's 
+     * */
     private byte[] generatePeerID() {
         byte[] peerid = new byte[20];
         peerid[0] = 'R';
