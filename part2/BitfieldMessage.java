@@ -1,3 +1,9 @@
+/**
+* @author Julie Duncan
+* @author David Rubin
+* @author Rosheen Chaudhry
+*/
+
 public class BitfieldMessage extends Message{
 
 	/*The bitfield message is variable length, where X is the length of the bitfield. 
