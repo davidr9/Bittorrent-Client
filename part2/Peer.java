@@ -3,9 +3,9 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.awt.event.*;
 
 /**
- * Peer object
  * @author Julie Duncan
  * @author David Rubin
  * @author Rosheen Chaudhry
@@ -39,13 +39,17 @@ public class Peer extends Thread implements Runnable{
 	
 	private long beginTime;
 	
-	private Thread th; /*thread to run this peer*/
+	public Thread th; /*thread to run this peer*/
 	
 	private String tName; /*name of thread for this peer*/
 	
 	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
 	public static int pieceLength = RUBTClient.torrentData.piece_length;
+	
+	private static Timer peerTimer = new Timer(true);
+	
+	volatile boolean finished = false;
 	
 	/**
 	 * Creates a new peer object
@@ -66,7 +70,7 @@ public class Peer extends Thread implements Runnable{
 		
 	}/*end of Peer class constructor*/
 	
-	/**
+	/*
 	 * Find private variable IP address
 	 * 
 	 * @return IP address of peer as string
@@ -75,7 +79,7 @@ public class Peer extends Thread implements Runnable{
 		return this.IPAddress;
 	}
 	
-	/**
+	/*
 	 * Find private variable port number
 	 * 
 	 * @return port number as integer
@@ -84,7 +88,7 @@ public class Peer extends Thread implements Runnable{
 		return this.portNum;
 	}
 	
-	/**
+	/*
 	 * Open a TCP socket on the local machine to contact the peer using the TCP peer protocol
 	 * 
 	 * @return true if success, false otherwise
@@ -106,7 +110,7 @@ public class Peer extends Thread implements Runnable{
 	    }  
 	}/*end of openSocket method*/
 
-	/** 
+	/* 
 	 * This method sends a Handshake to the peer. It checks the peers response for
 	 * a matching peerID and info hash
 	 * 
@@ -216,18 +220,18 @@ public class Peer extends Thread implements Runnable{
 		return 0;
 	}
 	
-	/**
+	/*
 	 * Downloads all pieces from this peer that we have not already downloaded.
 	 */
 	private void downloadPieces() throws EOFException, IOException{
 		
 		boolean readSuccessfully = false; /*true if peer successfully reads sent message*/
 		boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
-		
-		while (true){
+
+		while (!finished){
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
-			
+			lastMessageSent = System.currentTimeMillis();
 			
 			if (!readSuccessfully){
 				continue;
@@ -251,30 +255,43 @@ public class Peer extends Thread implements Runnable{
 				for (int i = 0; i < RUBTClient.numPieces; i++){
 					
 					if (RUBTClient.verifiedPieces.get(i) != null || whichPieces[i] == false){
+						System.out.println(RUBTClient.verifiedPieces.get(i).fullPiece.length);
 						continue;
 					}
 					
 					Piece completePiece = requestBlocks(i);
 					if (completePiece != null){
 						RUBTClient.verifiedPieces.set(i, completePiece);
+						RUBTClient.numPiecesVerified++;
 						RUBTClient.downloaded += completePiece.fullPiece.length;
 						RUBTClient.left -= completePiece.fullPiece.length;
+						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
+						
+						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
+							RUBTClient.event = "completed";
+							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED HOOOOORAYYYY");
+							finished = true;
+							Message uninterested = new Message(1, (byte) 3);
+							readSuccessfully = Message.writeMessage(outputStream, uninterested);
+							lastMessageSent = System.currentTimeMillis();
+							break;
+						}
 					}
 					
+				}/*end of for*/
+				
+				peerResponse = Message.readMessage(inputStream);
+				System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
+				if (peerResponse.message_id == Message.choke){
+					unchoked = false;
 				}
 
 			}/*end of while*/
-			
+
 		}/*end of infinite while loop*/
 		
 	}/*end of downloadPieces*/
 	
-	/**
-	 * Sends a request message for blocks within the specified piece.
-	 * @param piece
-	 * @return
-	 * @throws IOException
-	 */
 	public Piece requestBlocks(int piece) throws IOException{
 		
 		boolean readSuccessfully;
@@ -287,13 +304,15 @@ public class Peer extends Thread implements Runnable{
 			
 			RequestMessage rmessage;
 			
-			if (newPiece.lastPiece){
+			if (newPiece.lastPiece && i == newPiece.totalBlocks - 1){
 				rmessage = new RequestMessage(piece, offset, newPiece.lastBLOCKSIZE);
 			} else {
 				rmessage = new RequestMessage(piece, offset, BLOCKSIZE);
 			}
 			
 			readSuccessfully = Message.writeMessage(outputStream, rmessage);
+			lastMessageSent = System.currentTimeMillis();
+			
 			if (!readSuccessfully){
 				System.err.println("Could not read block from piece " + piece);
 				i--;
@@ -337,7 +356,7 @@ public class Peer extends Thread implements Runnable{
 		
 	} /*end of requestBlocks*/
 	
-	/**
+	/*
 	 * Creates new thread for Runnable Peer and starts it
 	 * 
 	 * @throws UnsupportedEncodingException for escape 
@@ -351,13 +370,16 @@ public class Peer extends Thread implements Runnable{
 		}
 	}
 	
-	/**
+	/*
 	 * Run function for peer threads.
 	 * 
 	 * Creates new thread with peerID as thread name. Begins downloading pieces from
 	 * thread, then closes socket and all streams when finished.
 	 */
+	
+	@Override
 	public void run(){
+		
 		
 		System.out.println("Thread " + tName + " has begun running");
 		int connected;
@@ -369,6 +391,7 @@ public class Peer extends Thread implements Runnable{
 				System.err.print("Could not connect with peer " + IPAddress);
 				System.err.println(". Some pieces of the file to download may be lost.");
 			} else {
+				peerTimer.schedule(new KeepAlive(), System.currentTimeMillis(), 120000);
 				downloadPieces();
 			}
 			
@@ -390,5 +413,21 @@ public class Peer extends Thread implements Runnable{
 		} catch (Exception e){
 			System.err.println(e.getMessage());
 		}
-	}
+	} /*end of run*/
+	
+	/*specific timer task subclass used to send keep-alive message to peer every two minutes*/
+	class KeepAlive extends TimerTask {
+		public void run(){
+			
+			System.out.println("Sending keep-alive message to peer at " + IPAddress);
+			Message kaMessage = new Message(0, (byte) -1);
+			try {
+				Message.writeMessage(outputStream, kaMessage);
+			} catch (IOException e) {
+				System.err.println("Peer at " + IPAddress + " could not read Keep-Alive message");
+			}
+		}
+	}/*end of KeepAlive class*/
+	
+	
 }
