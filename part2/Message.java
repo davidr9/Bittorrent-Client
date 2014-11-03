@@ -50,13 +50,17 @@ public class Message {
 
 		/*piece: <length prefix> is 9 + x and message ID 7*/
 		public static final byte piece = 7;
-		                
-        byte[] messageSent = null;
+		
+		/*stores the message that will be sent to the peer*/              
+        	byte[] messageSent = null;
                 
-        byte[] messageReceived = null; 
+                /*stores the message that the client will recieve*/
+	 	byte[] messageReceived = null; 
                 
+                //event that indicates user has canceled upload or download
 		public static final byte cancel = 8;
 
+		/*represents the possible messages that the client or peer can recieve*/
 		public static final Message keep_alive_message = new Message(0, keep_alive);
 		public static final Message choke_message = new Message(1, choke);
 		public static final Message unchoke_message = new Message(1, unchoke);
@@ -65,7 +69,6 @@ public class Message {
 		
 		/**
 		 *  length prefix is a 4-byte big-endian value and message ID is a single byte.
-		 *  
 		 **/
 		public Message(int length_prefix, byte message_id){
 			this.length = length_prefix;
@@ -73,7 +76,6 @@ public class Message {
 		}
 		
 		/**
-		 * 
 		 * @return byte array representing the messageID.
 		 */
 		public byte getID(){
@@ -81,7 +83,6 @@ public class Message {
 		}
 		
 		/**
-		 * 
 		 * @return integer representing the length of this message
 		 */
 		public int getLength(){
