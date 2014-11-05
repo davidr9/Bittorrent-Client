@@ -409,6 +409,8 @@ public class Peer implements Runnable{
 			} else {
 				peerTimer.schedule(new KeepAlive(), 120000, 120000);
 				downloadPieces();
+                                System.out.println("CALLING WRITE TO DISK");
+                                RUBTClient.writeToDisk(RUBTClient.fName);
 			}
 			
 		} catch (UnsupportedEncodingException e) {
