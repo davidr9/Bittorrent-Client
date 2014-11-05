@@ -3,8 +3,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.net.*;
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.awt.event.*;
 
 /**
  * @author Julie Duncan
@@ -12,7 +10,7 @@ import java.awt.event.*;
  * @author Rosheen Chaudhry
  */
 
-public class Peer extends Thread implements Runnable{
+public class Peer implements Runnable{
 
 	byte[] peerID; /*the id of this peer*/
 	
@@ -266,6 +264,9 @@ public class Peer extends Thread implements Runnable{
 					
 					/*creating pieces by instering blocks into a Piece object until complete*/
 					Piece completePiece = requestBlocks(i);
+					if (!unchoked){
+						break;
+					}
 					if (completePiece != null){
 						RUBTClient.verifiedPieces.set(i, completePiece);
 						RUBTClient.numPiecesVerified++;
@@ -274,7 +275,8 @@ public class Peer extends Thread implements Runnable{
 						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
 						
 						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
-							RUBTClient.event = "completed";
+							RUBTClient.downloadTime = (System.currentTimeMillis() - RUBTClient.beginTime);
+							RUBTClient.publishToTracker("completed");
 							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED");
 							finished = true;
 							Message uninterested = new Message(1, (byte) 3);
@@ -286,15 +288,18 @@ public class Peer extends Thread implements Runnable{
 					
 				}/*end of for*/
 				
+				if (!unchoked){
+					continue;
+				}
 				peerResponse = Message.readMessage(inputStream);
 				System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 				if (peerResponse.message_id == Message.choke){
 					unchoked = false;
 				}
 
-			}/*end of while*/
+			}/*end of inner while*/
 
-		}/*end of infinite while loop*/
+		}/*end of outer while loop*/
 		
 	}/*end of downloadPieces*/
 	
@@ -392,7 +397,6 @@ public class Peer extends Thread implements Runnable{
 	@Override
 	public void run(){
 		
-		
 		System.out.println("Thread " + tName + " has begun running");
 		int connected;
 		
@@ -403,7 +407,7 @@ public class Peer extends Thread implements Runnable{
 				System.err.print("Could not connect with peer " + IPAddress);
 				System.err.println(". Some pieces of the file to download may be lost.");
 			} else {
-				peerTimer.schedule(new KeepAlive(), System.currentTimeMillis(), 120000);
+				peerTimer.schedule(new KeepAlive(), 120000, 120000);
 				downloadPieces();
 			}
 			
@@ -424,6 +428,7 @@ public class Peer extends Thread implements Runnable{
 			inputStream.close();
 			outputStream.close();
 			peerSocket.close();
+			peerTimer.purge();
 		} catch (Exception e){
 			System.err.println(e.getMessage());
 		}
