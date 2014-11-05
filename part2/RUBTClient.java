@@ -55,7 +55,7 @@ public class RUBTClient extends Thread{
 	
 	public static int interval; /*interval received from tracker for periodic tracker announces*/
 	
-        public static String fName; 
+        public static String fName; /*name of the file in which the pieces will be written to*/
 
 	
 	
@@ -508,7 +508,6 @@ public class RUBTClient extends Thread{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		
 		}
    		
  	}/*end of publishTrackerInfo*/
