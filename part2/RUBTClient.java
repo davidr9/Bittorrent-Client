@@ -4,6 +4,9 @@ import java.net.URL.*;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.nio.*;
 
 /**
@@ -21,8 +24,6 @@ public class RUBTClient extends Thread{
 	static int downloaded; /*keeps track of how much of the file has been successfully downloaded from other peers, in bytes*/
 	
 	static int left; /*keeps track of how much of the file still needs to be written, in bytes*/
-	
-	public static String event = ""; /*"started" when client starts, "completed" when download completes, or "stopped" when downloading ceases. Empty o/w*/
 	
 	public static ByteBuffer[] pieces; /*Expected SHA-1 hashes of each piece of the file given from the torrent*/
 	
@@ -46,26 +47,33 @@ public class RUBTClient extends Thread{
 	
 	public static String singlePeerAddress; /*for 3rd argument if specified*/
 	
-	private static long beginTime; /*time the download started*/
+	private static Timer clientTimer = new Timer(true); /*Timer object used to keep track of the time*/
 	
-	private static long downloadTime; /*time it took to download during this session*/
+	public static long beginTime; /*time the download started*/
+	
+	public static long downloadTime; /*time it took to download during this session*/
+	
+	public static int interval; /*interval received from tracker for periodic tracker announces*/
+	
+
+	
 	
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
 		
 		/*Error handling when user enters incorrect number of arguments*/
         if (args.length > 3 || args.length < 2)
 		{
-			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name>");
+			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name> <IP address (optional)>");
 			return;
 		}
         
-        /*checks to see if the last arguement is a peer*/
+        /*checks to see if the last argument is a peer*/
         if (args.length == 3){
         	singlePeer = true;
         	singlePeerAddress = args[2];
         }
 		
-        	String inFileName = args[0]; /*torrent file*/
+        String inFileName = args[0]; /*torrent file*/
 		String outFileName = args[1]; /*file to output successful download to*/
 		
 		File torrentFile = new File(inFileName); /*torrent file stream*/
@@ -88,6 +96,7 @@ public class RUBTClient extends Thread{
         pieces = torrentData.piece_hashes;
         pieceLength = torrentData.piece_length;
         left = torrentData.file_length;
+        port = extractPort(torrentData.announce_url);
         downloaded = 0;
         uploaded = 0;
  
@@ -98,14 +107,11 @@ public class RUBTClient extends Thread{
         	lastPieceLength = torrentData.file_length%torrentData.piece_length;
         }
         
-        System.out.println("Numpieces is " + numPieces);
-        System.out.println("lastPieceLength is " + lastPieceLength);
-        
         for (int i = 0; i < numPieces; i++){
         	verifiedPieces.add(null);
         }
        
-        ArrayList<Peer> peers = sendRequestToTracker(torrentData); /*List of peers received from the tracker*/ 
+        ArrayList<Peer> peers = sendRequestToTracker(); /*List of peers received from the tracker*/ 
         
         if (singlePeer){
         	connectToPeer(peers, singlePeerAddress);
@@ -159,10 +165,10 @@ public class RUBTClient extends Thread{
      * @param tInfo contains all info from torrent
      * @return Array List of peers given by tracker
      */
-    private static ArrayList<Peer> sendRequestToTracker(TorrentInfo tInfo) 
+    private static ArrayList<Peer> sendRequestToTracker() 
     		throws MalformedURLException, IOException, UnknownHostException{
        
-    	URL newURL = createURL(tInfo); /*Properly formatted URL*/
+    	URL newURL = createURL(""); /*Properly formatted URL*/
     	
     	try {
     		/*send HTTP GET request to tracker*/
@@ -188,25 +194,56 @@ public class RUBTClient extends Thread{
         
     }/*end of sendRequestToTracker method*/
     
+    public static void publishToTracker(String event) 
+    		throws MalformedURLException, IOException, UnknownHostException{
+
+    	URL newURL = createURL(event); /*Properly formatted URL*/
+    	
+    	try {
+    		/*send HTTP GET request to tracker*/
+    		byte[] trackerResponse;
+    	    HttpURLConnection request = (HttpURLConnection) newURL.openConnection();
+    	    request.setRequestMethod("GET");
+    	    DataInputStream trackerStream = new DataInputStream(request.getInputStream());
+    	   
+    	    /*get tracker response*/
+    	    int requestSize = request.getContentLength(); 
+    	    trackerResponse = new byte[requestSize];
+    	    trackerStream.readFully(trackerResponse);
+    	    trackerStream.close();
+    	} catch (IOException e) {
+    		System.err.println("Error: " + e.getMessage());
+    		return;
+    	} catch (Exception e) {
+    		System.err.println("Error: " + e.getMessage());
+    		return;
+    	}
+        
+    }/*end of sendRequestToTracker method*/
+    
     /*
      * Concatenates string with relevant data into proper URL format and returns equivalent URL
      * 
      * @param tInfo contains all info from torrent
      * @return finished URL
      */
-    private static URL createURL(TorrentInfo tInfo) throws MalformedURLException, UnsupportedEncodingException{
-    	String workingURL = tInfo.announce_url.toString() + '?'; /*base URL*/
+    private static URL createURL(String event) throws MalformedURLException, UnsupportedEncodingException{
+    	String workingURL = torrentData.announce_url.toString() + '?'; /*base URL*/
     	
-    	String escapedInfoHash = escape(tInfo.info_hash.array()); /*escaped version of info_hash*/
+    	String escapedInfoHash = escape(torrentData.info_hash.array()); /*escaped version of info_hash*/
     	String escapedPeerID = escape(clientID); /*escaped version of id*/
-    	String port = Integer.toString(extractPort(tInfo.announce_url));
+    	String port = Integer.toString(extractPort(torrentData.announce_url));
     	String l = Integer.toString(left); /*initially set as the size of the file to be downloaded*/
     	String d = Integer.toString(downloaded);
     	String u = Integer.toString(uploaded);
     	
     	/*concatenate data into proper URL format*/
     	workingURL = workingURL + "info_hash" + "=" + escapedInfoHash + "&peer_id=" + escapedPeerID + "&port="
-    			+ port + "&uploaded=" + u + "&downloaded=" + d + "&left=" + l + "&event=" + event;
+    			+ port + "&uploaded=" + u + "&downloaded=" + d + "&left=" + l;
+    			
+    	if (event.length() > 0){
+    		workingURL = workingURL + "&event=" + event;
+    	}
     	
     	try {
     		URL finalURL = new URL(workingURL);
@@ -255,6 +292,7 @@ public class RUBTClient extends Thread{
         
     		try{
     			TrackerResponseInfo trackerData = new TrackerResponseInfo(tracker_response); /*create object with data from tracker*/
+    			interval = trackerData.interval;
         		ArrayList<Peer> peers = trackerData.peers; /*get list of peers from tracker*/
         		if (peers.isEmpty()){
         			throw new NullPointerException("List of peers is empty");
@@ -304,7 +342,6 @@ public class RUBTClient extends Thread{
     private static void connectToPeers(ArrayList<Peer> peers) throws SocketException, IOException, InterruptedException{
     	
     	connectedPeers = new ArrayList<Peer>();
-    	System.out.println(peers.size());
     	
     	for (int i = 0; i < peers.size(); i++){
 			String ip = peers.get(i).getIP();
@@ -314,19 +351,12 @@ public class RUBTClient extends Thread{
 			}
     	}
     	
-    	beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
-    	event = "started";
+    	startClientThread();
     	
     	for (int i = 0; i < connectedPeers.size(); i++){
 			connectedPeers.get(i).startThread();
 		}
     	
-    	for (int i = 0; i < connectedPeers.size(); i++){
-    		connectedPeers.get(i).th.join();
-    	}
-    	
-    	downloadTime = System.currentTimeMillis() - beginTime;
-    	System.out.println("Total time of download: " + downloadTime + " ms");
     	
     } /*end of connectToPeers method*/
     
@@ -350,30 +380,22 @@ public class RUBTClient extends Thread{
 			}
     	}
     	
-    	beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
-    	event = "started";
+    	startClientThread();
     	
     	for (int i = 0; i < connectedPeers.size(); i++){
 				connectedPeers.get(i).startThread();
 		}
     	
-    	for (int i = 0; i < connectedPeers.size(); i++){
-    		connectedPeers.get(i).th.join();
-    	}
-    	
-    	downloadTime = System.currentTimeMillis() - beginTime;
-    	System.out.println("Total time of download: " + downloadTime + " ms");
+  
     } /*end of connectToPeers method*/
     
-    /*Prints the connection information to the tracker*/
-	public static void publishTrackerInfo()
-	{
-		System.out.println("Uploaded: " + uploaded);
-		System.out.println("Downloaded: " + downloaded);
-		System.out.println("Left: " + left); 
-		System.out.println("Event: " + event);
-	}/*end of publishTrackerInfo*/
-	
+	/*
+	 * Converts bitfield from a bitfield message to a boolean array with the same number of bits
+	 * 
+	 * @param bits payload of bitfield message
+	 * @param significantBits 8 * the length of bits
+	 * @return boolean array with true at all indecis where bit is set, and false for those where bit is 0
+	 */
 	public static boolean[] convertBitfield(byte[] bits, int significantBits) {
 		boolean[] retVal = new boolean[significantBits];
 		int boolIndex = 0;
@@ -419,5 +441,76 @@ public class RUBTClient extends Thread{
         }/*end of for loop*/
         file.close();
     }/*end of writeToDisk*/
+    
+    public static void startClientThread() throws UnsupportedEncodingException{
+    	Thread clientThread = null; /*thread to run this client*/
+    	String tName; /*name of thread for this client*/
+    	
+    	if (clientThread == null){
+			tName = escape(clientID);
+			clientThread = new RUBTClient();
+			clientThread.start();
+		}
+    }
+    
+    public void run(){
+    	try {
+    		System.out.println("Thread " + escape(clientID) + " has begun running");
+    		beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
+			publishToTracker("started");
+			clientTimer.schedule(new publishStatus(), 0, interval*1000);
+			
+			while(true){  
+        		Scanner sc = new Scanner(System.in);
+            	
+            	String line = sc.next();
+            	if(line.equals("q") || line.equals("Q") || line.equals("quit") || line.equals("Quit") || line.equals("stop")){
+            		for (int i = 0; i < connectedPeers.size(); i++){
+            			connectedPeers.get(i).th.stop();
+            		}
+            		
+            		if (downloadTime == 0){
+            			downloadTime = (System.currentTimeMillis() - beginTime);
+            		}
+            		System.out.println("Total time of download: " + downloadTime + " ms");
+            		publishToTracker("stopped");
+            		break;
+            	}
+
+			}/*end of while*/
+			
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+    }
+    
+    /*Task that publishes the connection information to the tracker*/
+   class publishStatus extends TimerTask {
+		public void run(){
+			System.out.println("Current status being published to tracker:");
+			System.out.println("Uploaded = " + uploaded);
+			System.out.println("Downloaded = " + downloaded);
+			System.out.println("Left = " + left); 
+			
+			try {
+				publishToTracker("");
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		
+		}
+   		
+ 	}/*end of publishTrackerInfo*/
 	
 }/*end of RUBTClient class*/
