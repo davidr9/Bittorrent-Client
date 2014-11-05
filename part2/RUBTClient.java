@@ -55,6 +55,7 @@ public class RUBTClient extends Thread{
 	
 	public static int interval; /*interval received from tracker for periodic tracker announces*/
 	
+        public static String fName; 
 
 	
 	
@@ -75,7 +76,7 @@ public class RUBTClient extends Thread{
 		
         String inFileName = args[0]; /*torrent file*/
 		String outFileName = args[1]; /*file to output successful download to*/
-		
+		fName = outFileName; 
 		File torrentFile = new File(inFileName); /*torrent file stream*/
 		
         /*opens the torrent file or throws an exception if file doesn't exist*/
@@ -118,7 +119,7 @@ public class RUBTClient extends Thread{
         } else {
         	connectToPeers(peers); /*array for peers that hold pieces of the file to download*/
         }
-        writeToDisk(outFileName);
+       
         
 	}/*end of main method*/
 
@@ -425,7 +426,6 @@ public class RUBTClient extends Thread{
         file.setLength(len);
         /*index in which the byte[] will be written*/
         long index = 0;
-        
         /*goes through pieces array and writes pieces to file*/
         for(int i = 0; i < verifiedPieces.size(); i++)
         {   
@@ -434,10 +434,10 @@ public class RUBTClient extends Thread{
                 continue;
             }else{
                 /*writes to file if the index of the arraylist contains data*/
-                index = (long) verifiedPieces.get(i).index * verifiedPieces.get(i).fullPiece.length;
+                index = verifiedPieces.get(i).index * verifiedPieces.get(0).fullPiece.length;
                 file.seek(index);
                 file.write(verifiedPieces.get(i).fullPiece);
-            }    
+            }
         }/*end of for loop*/
         file.close();
     }/*end of writeToDisk*/
