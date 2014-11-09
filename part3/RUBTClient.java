@@ -1,7 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.net.URL.*;
-import java.security.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -55,7 +53,11 @@ public class RUBTClient extends Thread{
 	
 	public static int interval; /*interval received from tracker for periodic tracker announces*/
 	
-        public static String fName; /*name of the file in which the pieces will be written to*/
+	public byte[] clientBitfield = new byte[numPieces]; /*byte array that shows the pieces the client has downloaded*/
+	
+	private static boolean[] clientPieces; /*zero-based piece indecis will be true if piece has been downlaoded/verified and 0 o/w*/
+	
+    public static String fName; /*name of the file in which the pieces will be written to*/
 
 	
 	
@@ -107,6 +109,8 @@ public class RUBTClient extends Thread{
         	numPieces = torrentData.file_length/torrentData.piece_length + 1;
         	lastPieceLength = torrentData.file_length%torrentData.piece_length;
         }
+
+        clientPieces = new boolean[numPieces*8];
         
         for (int i = 0; i < numPieces; i++){
         	verifiedPieces.add(null);
@@ -336,6 +340,22 @@ public class RUBTClient extends Thread{
 	}
     
     /*
+     * Updates clientPieces after downloading and verifying a piece
+     * 
+     * @param pieceIndex the zero-based piece index of the piece being updated
+     * @return updated boolean array clientPieces
+     */
+    public static boolean[] updateClientPieces(int pieceIndex){
+    	clientPieces[pieceIndex] = true;
+    	return clientPieces;
+    }/*end of updateClientPieces*/
+    
+    /*method updates the number of blocks uploaded*/
+    public static void updateUploaded(int size){
+    	uploaded += size; 
+    }/*end of updateUploaded*/
+    
+    /*
      * Connects to peers at a specific IP address and starts threads for each. Joins threads upon completion and prints total download time
      * 
      * @param peers list of all peers from tracker
@@ -411,6 +431,34 @@ public class RUBTClient extends Thread{
 		}
 		return retVal;
 	}
+	
+	/**
+	 * Convert the client boolean bitfield into a byte[]
+	 * @param bitfield thecClient boolean bitfield.
+	 * @return The byte[] version of the Client bitfield
+	 */
+	private byte[] convertBooleanField(boolean[] bitfield) {
+		//Calcuate the number of bytes needed to contain the bitfield
+		byte[] bytes = new byte[(int)Math.ceil(bitfield.length / 8.0)];
+		for(int i = 0; i < bytes.length; i++) {
+			bytes[i] = (byte)0;
+			for(int j = 0; j < 8; j++) {
+				if((i*8+j)==bitfield.length) {
+					break;
+				}
+				byte curr = (byte)0;
+				//If the boolean array contains a 1, set curr to 0x1.
+				if( bitfield[i*8+j] ) {
+					//bitwise or to append the bit to the end of the current byte
+					curr = (byte)1;
+					curr <<= (7-j);
+					bytes[i] = (byte)(bytes[i]|curr);
+				}
+				
+			} //for each bit in a byte
+		} //for each byte
+		return bytes;
+	} /*end of convertBooleanField method*/
 	
 	/*
 	 * Goes through array list of verified pieces and writes all pieces to file
@@ -508,6 +556,7 @@ public class RUBTClient extends Thread{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		
 		}
    		
  	}/*end of publishTrackerInfo*/
