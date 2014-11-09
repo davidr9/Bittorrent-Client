@@ -35,12 +35,12 @@ public class Peer implements Runnable{
 	private boolean isInterested = false; /*true if peer is interested in downloading from client*/
 
 	private long lastMessageSent; /*keeps track of the last message sent from peer*/
-	
-	private long beginTime; /*initial time used to time file download*/
-	
+
 	public Thread th; /*thread to run this peer*/
 	
 	private String tName; /*name of thread for this peer*/
+	
+	private boolean peerIsUnchoked = false;
 	
 	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
@@ -237,7 +237,7 @@ public class Peer implements Runnable{
 				continue;
 			}
 			
-			/*stores the response of the peer after the client sends a mssage*/
+			/*stores the response of the peer after the client sends a message*/
 			Message peerResponse = Message.readMessage(inputStream);
 			System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 			
@@ -246,10 +246,17 @@ public class Peer implements Runnable{
 				BitfieldMessage bitResponse = (BitfieldMessage) peerResponse;
 				byte[] bitfield = bitResponse.getPieces();
 				whichPieces = RUBTClient.convertBitfield(bitfield, bitfield.length * 8);				
-			}
-			
-			if (peerResponse.message_id == Message.unchoke){
+			}else if (peerResponse.message_id == Message.unchoke){
 				unchoked = true;
+			}else if(peerResponse.message_id == Message.interested){
+				//send the peer that requested it an unchoke message
+				peerIsUnchoked = true;
+				Message unchokePeer = new Message(1,(byte) 1);
+				Message.writeMessage(outputStream, unchokePeer);
+			}else if(peerResponse.message_id == Message.request){
+				uploadPiece((RequestMessage) peerResponse);
+			}else{
+				
 			}
 			
 			/*downloads pieces of the file while the peer is unchoked*/
@@ -262,7 +269,7 @@ public class Peer implements Runnable{
 						continue;
 					}
 					
-					/*creating pieces by instering blocks into a Piece object until complete*/
+					/*creating pieces by inserting blocks into a Piece object until complete*/
 					Piece completePiece = requestBlocks(i);
 					if (!unchoked){
 						break;
@@ -272,6 +279,7 @@ public class Peer implements Runnable{
 						RUBTClient.numPiecesVerified++;
 						RUBTClient.downloaded += completePiece.fullPiece.length;
 						RUBTClient.left -= completePiece.fullPiece.length;
+						RUBTClient.updateClientPieces(i);
 						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
 						
 						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
@@ -301,7 +309,14 @@ public class Peer implements Runnable{
 
 		}/*end of outer while loop*/
 		
+		uploadOnly();
+		
 	}/*end of downloadPieces*/
+	
+	/*Method will continue to upload currently downloaded Pieces after all the Pieces have been downloaded*/
+	private void uploadOnly(){
+		
+	}/*end of uploadOnly*/
 	
 	
 	/**
@@ -374,6 +389,21 @@ public class Peer implements Runnable{
 		
 	} /*end of requestBlocks*/
 	
+	/*method uploads the piece message requested by the peer*/
+	public void uploadPiece(RequestMessage peerResponse) throws IOException{
+		int size = peerResponse.block_length;
+		int piece_index = peerResponse.getPieceIndex();
+		int begin = peerResponse.getBeginningOfBlock();
+		byte[] requestedBlock = new byte[size];
+		byte[] pieceInfo = RUBTClient.verifiedPieces.get(piece_index).fullPiece; 
+		System.arraycopy(pieceInfo, begin, requestedBlock, 0, size);
+		PieceMessage peerPiece = new PieceMessage(piece_index, begin, requestedBlock);
+	
+		if(Message.writeMessage(outputStream, peerPiece)){
+			RUBTClient.updateUploaded(size); 
+		}
+	}/*end of uploadPieces*/
+	
 	/*
 	 * Creates new thread for Runnable Peer and starts it
 	 * 
@@ -409,7 +439,8 @@ public class Peer implements Runnable{
 			} else {
 				peerTimer.schedule(new KeepAlive(), 120000, 120000);
 				downloadPieces();
-                                RUBTClient.writeToDisk(RUBTClient.fName);
+				uploadOnly();
+                RUBTClient.writeToDisk(RUBTClient.fName);
 			}
 			
 		} catch (UnsupportedEncodingException e) {
