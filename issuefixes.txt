@@ -1,6 +1,0 @@
-How to compile:
-
-cd into the part1 folder.
-type "javac -cp ToolKit.java"
-type "javac -cp BencodingException.java"
-then compile everything else
