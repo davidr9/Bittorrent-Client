@@ -355,6 +355,9 @@ public class RUBTClient extends Thread{
     	uploaded += size; 
     }/*end of updateUploaded*/
     
+    public static byte[] getClientBitfield(){
+        return clientBitfield; 
+    }
     /*
      * Connects to peers at a specific IP address and starts threads for each. Joins threads upon completion and prints total download time
      * 
@@ -467,7 +470,7 @@ public class RUBTClient extends Thread{
 	 */
     public static void writeToDisk(String outFile) throws FileNotFoundException, IOException
     {
-        /*outFile is the name you want to save the file to*/
+     /*outFile is the name you want to save the file to*/
         RandomAccessFile file = new RandomAccessFile(outFile, "rw");
         long len = numPieces * pieceLength; 
         /*sets the file length*/
@@ -488,6 +491,7 @@ public class RUBTClient extends Thread{
             }
         }/*end of for loop*/
         file.close();
+        System.out.println("END OF WRITE TO DISK METHOD");
     }/*end of writeToDisk*/
     
     public static void startClientThread() throws UnsupportedEncodingException{
