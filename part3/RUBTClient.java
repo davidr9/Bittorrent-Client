@@ -62,8 +62,9 @@ public class RUBTClient extends Thread{
 	
 	
 	public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
-		
-		/*Error handling when user enters incorrect number of arguments*/
+	
+	startGUI();	
+	/*Error handling when user enters incorrect number of arguments*/
         if (args.length > 3 || args.length < 2)
 		{
 			System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name> <IP address (optional)>");
@@ -127,6 +128,33 @@ public class RUBTClient extends Thread{
         
 	}/*end of main method*/
 
+         /*method creates and instance of the GUI client*/
+        private static void startGUI(){
+            try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(torrentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(torrentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(torrentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(torrentGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }/*end of startGUI*/
+
+   
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new torrentGUI().setVisible(true);
+            }
+        });
+        }/*end of startGUI*/
+        
 	/*
 	 * parses the data in the torrent file given by the user
 	 * 
