@@ -53,7 +53,7 @@ public class RUBTClient extends Thread{
 	
 	public static int interval; /*interval received from tracker for periodic tracker announces*/
 	
-	public byte[] clientBitfield = new byte[numPieces]; /*byte array that shows the pieces the client has downloaded*/
+	public static byte[] clientBitfield = new byte[numPieces]; /*byte array that shows the pieces the client has downloaded*/
 	
 	private static boolean[] clientPieces; /*zero-based piece indecis will be true if piece has been downlaoded/verified and 0 o/w*/
 	
