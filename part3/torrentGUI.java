@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.net.UnknownHostException;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -10,6 +13,7 @@
  */
 public class torrentGUI extends javax.swing.JFrame {
 
+	public boolean programStarted = false;
     /**
      * Creates new form torrentGUI
      */
@@ -35,7 +39,24 @@ public class torrentGUI extends javax.swing.JFrame {
         startButton.setText("START");
         startButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startButtonActionPerformed(evt);
+                try {
+					startButtonActionPerformed(evt);
+				} catch (UnknownHostException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NullPointerException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (BencodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
             }
         });
 
@@ -80,16 +101,23 @@ public class torrentGUI extends javax.swing.JFrame {
         pack();
     }// </editor-fold>                        
 
-    private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
+    private void startButtonActionPerformed(java.awt.event.ActionEvent evt)throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException  {                                            
         // TODO add your handling code here:
-        
+       if(!programStarted){
+    	RUBTClient.begin();
+        startButton.setEnabled(false);
+        programStarted = true;
+       }
     }                                           
 
     private void stopButtonActionPerformed(java.awt.event.ActionEvent evt) {                                           
         // TODO add your handling code here:
-        for(int i = 0; i < RUBTClient.connectedPeers.size(); i++)
-        {
-            RUBTClient.connectedPeers.get(i).th.stop();
+        if(programStarted){
+        	for(int i = 0; i < RUBTClient.connectedPeers.size(); i++)
+        	{
+        		RUBTClient.connectedPeers.get(i).th.stop();
+        		stopButton.setEnabled(false);
+        	}
         }
     }                                          
 
