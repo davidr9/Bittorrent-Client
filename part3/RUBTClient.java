@@ -59,17 +59,20 @@ public class RUBTClient extends Thread{
     
     public static String fName; /*name of the file in which the pieces will be written to*/
 
+    public static String[] args;
     
-    
-    public static void main(String[] args) throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
+    public static void main(String[] arguments) {
         torrentGUI.startGUI();
         /*Error handling when user enters incorrect number of arguments*/
+       args = arguments;
         if (args.length > 3 || args.length < 2)
         {
             System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name> <IP address (optional)>");
             return;
         }
-        
+    }/*Main ends here*/
+    
+    public static void begin() throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
         /*checks to see if the last argument is a peer*/
         if (args.length == 3){
             singlePeer = true;
@@ -95,7 +98,7 @@ public class RUBTClient extends Thread{
             System.err.println("Cannot proceed if torrent file is null");
             return;
         }
-        
+      
         pieces = torrentData.piece_hashes;
         pieceLength = torrentData.piece_length;
         left = torrentData.file_length;
@@ -569,4 +572,3 @@ public class RUBTClient extends Thread{
     }/*end of publishTrackerInfo*/
     
 }/*end of RUBTClient class*/
-
