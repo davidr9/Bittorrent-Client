@@ -62,7 +62,7 @@ public class RUBTClient extends Thread{
     public static String[] args;
     
     public static void main(String[] arguments) {
-        torrentGUI.startGUI();
+        
         /*Error handling when user enters incorrect number of arguments*/
        args = arguments;
         if (args.length > 3 || args.length < 2)
@@ -70,6 +70,9 @@ public class RUBTClient extends Thread{
             System.out.println("Correct Usage: RUBTClient <.torrent file name> <ouptut file name> <IP address (optional)>");
             return;
         }
+        
+        torrentGUI.startGUI();
+        
     }/*Main ends here*/
     
     public static void begin() throws UnknownHostException, IOException, NullPointerException, BencodingException, InterruptedException {
@@ -349,9 +352,9 @@ public class RUBTClient extends Thread{
      * @param pieceIndex the zero-based piece index of the piece being updated
      * @return updated boolean array clientPieces
      */
-    public static boolean[] updateClientPieces(int pieceIndex){
+    public static void updateClientPieces(int pieceIndex){
         clientPieces[pieceIndex] = true;
-        return clientPieces;
+        clientBitfield = convertBooleanField(clientPieces);
     }/*end of updateClientPieces*/
     
     /*method updates the number of blocks uploaded*/
@@ -444,7 +447,7 @@ public class RUBTClient extends Thread{
      * @param bitfield thecClient boolean bitfield.
      * @return The byte[] version of the Client bitfield
      */
-    private byte[] convertBooleanField(boolean[] bitfield) {
+    private static byte[] convertBooleanField(boolean[] bitfield) {
         //Calcuate the number of bytes needed to contain the bitfield
         byte[] bytes = new byte[(int)Math.ceil(bitfield.length / 8.0)];
         for(int i = 0; i < bytes.length; i++) {
