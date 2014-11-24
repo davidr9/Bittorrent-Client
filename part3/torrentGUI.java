@@ -15,6 +15,8 @@ public class torrentGUI extends javax.swing.JFrame {
     
     static int downloadedPieces = 0; 
     
+    
+    
     /**
      * Creates new form torrentGUI
      */
@@ -69,12 +71,15 @@ public class torrentGUI extends javax.swing.JFrame {
         uploadLabel.setText("Uploaded:");
 
         downloadDisplay.setText("0");
+        downloadDisplay.setEditable(false);
 
         uploadDisplay.setText("0");
+        uploadDisplay.setEditable(false);
 
         timeLabel.setText("Time: ");
 
-        timeDisplay.setText("0");
+        timeDisplay.setEditable(false);
+        timeDisplay.setText("0.0");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -92,12 +97,11 @@ public class torrentGUI extends javax.swing.JFrame {
                     .addComponent(downloadLabel)
                     .addComponent(uploadLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(28, 28, 28)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(timeDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(downloadDisplay, javax.swing.GroupLayout.DEFAULT_SIZE, 79, Short.MAX_VALUE)
-                        .addComponent(uploadDisplay)))
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(downloadDisplay, javax.swing.GroupLayout.DEFAULT_SIZE, 79, Short.MAX_VALUE)
+                    .addComponent(uploadDisplay)
+                    .addComponent(timeDisplay))
+                .addContainerGap(33, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -156,12 +160,13 @@ public class torrentGUI extends javax.swing.JFrame {
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
         uploadDisplay.setText("0");
         downloadDisplay.setText("0");
-        timeDisplay.setText("0");
+        //timeDisplay.setText("0");
     }                                           
 
     public static void updateDownload(){
         String display = Integer.toString(RUBTClient.downloaded);
         downloadDisplay.setText(display);
+        
     }
     
     public static void updateUpload(){
@@ -171,7 +176,7 @@ public class torrentGUI extends javax.swing.JFrame {
     
     public static void updateTime(){
         String display = Double.toString(RUBTClient.downloadTime);
-        timeDisplay.setText(display);
+        //timeDisplay.setText(display);
     }
     /**
      * @param args the command line arguments
@@ -219,4 +224,5 @@ public class torrentGUI extends javax.swing.JFrame {
     public static javax.swing.JTextField uploadDisplay;
     private javax.swing.JLabel uploadLabel;
     // End of variables declaration                   
+
 }
