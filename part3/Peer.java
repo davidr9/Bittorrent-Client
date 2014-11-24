@@ -263,6 +263,7 @@ public class Peer implements Runnable{
 						RUBTClient.downloaded += completePiece.fullPiece.length;
 						RUBTClient.left -= completePiece.fullPiece.length;
 						RUBTClient.updateClientPieces(i);
+                                                torrentGUI.updateDownload();
 						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
 						
 						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
