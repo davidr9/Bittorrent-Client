@@ -140,9 +140,8 @@ public class torrentGUI extends javax.swing.JFrame {
                 Logger.getLogger(torrentGUI.class.getName()).log(Level.SEVERE, null, ex);
             } catch (InterruptedException ex) {
                 Logger.getLogger(torrentGUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        startButton.setEnabled(false);
-        programStarted = true;
+            }        programStarted = true;
+            startButton.setEnabled(false);
        }
     }                                           
 
@@ -151,13 +150,15 @@ public class torrentGUI extends javax.swing.JFrame {
           if(programStarted){
         	for(int i = 0; i < RUBTClient.getConnectedPeers().size(); i++)
         	{
-        		RUBTClient.getConnectedPeers().get(i).stopProgram = true;
+        		RUBTClient.getConnectedPeers().get(i).updateStopProgram();
         		stopButton.setEnabled(false);
         	}
                 
                 System.out.println("Total time of download: " + RUBTClient.getDownloadTime() + " ms");
+                
                 try {
 					RUBTClient.publishToTracker("stopped");
+					RUBTClient.writeToDisk(RUBTClient.getfName());
 				} catch (MalformedURLException e) {
 					e.printStackTrace();
 				} catch (UnknownHostException e) {
