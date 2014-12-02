@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -148,42 +149,51 @@ public class torrentGUI extends javax.swing.JFrame {
     private void stopButtonActionPerformed(java.awt.event.ActionEvent evt) {                                           
 
           if(programStarted){
-        	for(int i = 0; i < RUBTClient.connectedPeers.size(); i++)
+        	for(int i = 0; i < RUBTClient.getConnectedPeers().size(); i++)
         	{
-        		RUBTClient.connectedPeers.get(i).th.stop();
+        		RUBTClient.getConnectedPeers().get(i).stopProgram = true;
         		stopButton.setEnabled(false);
         	}
-                updateTime();
+                
+                System.out.println("Total time of download: " + RUBTClient.getDownloadTime() + " ms");
+                try {
+					RUBTClient.publishToTracker("stopped");
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
         }
     }                                          
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
         uploadDisplay.setText("0");
         downloadDisplay.setText("0");
-        //timeDisplay.setText("0");
+        timeDisplay.setText("0");
     }                                           
 
     public static void updateDownload(){
-        String display = Integer.toString(RUBTClient.downloaded);
+        String display = Integer.toString(RUBTClient.getDownloaded());
         downloadDisplay.setText(display);
         
     }
     
     public static void updateUpload(){
-        String display = Integer.toString(RUBTClient.uploaded);
+        String display = Integer.toString(RUBTClient.getUploaded());
         uploadDisplay.setText(display);
     }
     
-    public static void updateTime(){
-        String display = Double.toString(RUBTClient.downloadTime);
-        //timeDisplay.setText(display);
+    public static void updateTime(double downloadTime){
+        timeDisplay.setText(downloadTime + " s");
     }
     /**
      * @param args the command line arguments
      */
     public static void startGUI() {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* Set the Nimbus look and feel
+         * <editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
