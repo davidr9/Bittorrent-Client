@@ -62,6 +62,8 @@ public class RUBTClient extends Thread{
 
     private static String[] args;
     
+    public static int fileLength; 
+    
     public static void main(String[] arguments) {
         
         /*Error handling when user enters incorrect number of arguments*/
