@@ -34,7 +34,9 @@ public class Peer implements Runnable{
 	
 	private boolean isInterested = false; /*true if peer is interested in downloading from client*/
 
-	private long lastMessageSent; /*keeps track of the last message sent from peer*/
+	private long lastMessageSent; /*keeps track of the last time a message was sent from the peer*/
+	
+	private long lastMessageReceived; /*keeps track of last time a message was received from the peer*/
 
 	public Thread th; /*thread to run this peer*/
 	
@@ -44,13 +46,15 @@ public class Peer implements Runnable{
 	
 	final int BLOCKSIZE = 16384; /*generally accepted block size is 2^14*/
 	
-	public static int pieceLength = RUBTClient.torrentData.piece_length; /*length of a piece in the info_hash*/
+	public static int pieceLength = RUBTClient.getTorrentData().piece_length; /*length of a piece in the info_hash*/
 	
 	private static Timer peerTimer = new Timer(true); /*Timer object used to keep track of the time*/
 	
-	volatile boolean finished = false; /*event that is updated when all pieces have been downloaded*/
+	private boolean finished = false; /*event that is updated when all pieces have been downloaded*/
 	
 	boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
+	
+	static boolean stopProgram;
 	
 	/**
 	 * Creates a new peer object
@@ -229,6 +233,10 @@ public class Peer implements Runnable{
 		
 		/*loop continues until all the pieces have been downloaded or user exits the program*/
 		while (!finished){
+			
+			if (stopProgram){
+				return;
+			}
 			/*sending the initial interested message to the peers*/
 			Message interested = new Message(1, (byte) 2);
 			readSuccessfully = Message.writeMessage(outputStream, interested);
@@ -238,16 +246,23 @@ public class Peer implements Runnable{
 				continue;
 			}
 			
-			 
-            Message peerResponse; /*stores the response of the peer after the client sends a message*/
             acceptMessage();
 			
 			/*downloads pieces of the file while the peer is unchoked*/
 			while (unchoked){
 				
-				for (int i = 0; i < RUBTClient.numPieces; i++){
+				/*stop downloading and uploading if user has requested to stop the program*/
+				if (stopProgram){
+					return;
+				}
+				
+				for (int i = 0; i < RUBTClient.getNumPieces(); i++){
 					
-					if (RUBTClient.verifiedPieces.get(i) != null || whichPieces[i] == false){
+					if (stopProgram){
+						return;
+					}
+					
+					if (RUBTClient.getVerifiedPiece(i) != null || whichPieces[i] == false){
 						continue;
 					}
 					
@@ -256,18 +271,21 @@ public class Peer implements Runnable{
 					if (!unchoked){
 						break;
 					}
+					
 					if (completePiece != null){
 						System.out.println("Piece downloaded from peer at " + IPAddress);
-						RUBTClient.verifiedPieces.set(i, completePiece);
-						RUBTClient.numPiecesVerified++;
-						RUBTClient.downloaded += completePiece.fullPiece.length;
-						RUBTClient.left -= completePiece.fullPiece.length;
-						RUBTClient.updateClientPieces(i);
-                                                torrentGUI.updateDownload();
-						System.out.println("Num Pieces verified: " + RUBTClient.numPiecesVerified);
 						
-						if (RUBTClient.numPiecesVerified == RUBTClient.numPieces){
-							RUBTClient.downloadTime = (System.currentTimeMillis() - RUBTClient.beginTime);
+						/*update necessary global client variables*/
+						RUBTClient.setVerifiedPieces(i, completePiece);
+						RUBTClient.updateDownloaded(completePiece.fullPiece.length);
+						RUBTClient.updateClientPieces(i);
+						RUBTClient.updateDownloadTime(System.currentTimeMillis());
+						torrentGUI.updateDownload();
+						torrentGUI.updateTime(RUBTClient.getDownloadTime());
+				
+						System.out.println("Num Pieces verified: " + RUBTClient.getNumPiecesVerified());
+						
+						if (RUBTClient.getNumPiecesVerified() == RUBTClient.getNumPieces()){
 							RUBTClient.publishToTracker("completed");
 							System.out.println("ALL THE PIECES HAVE BEEN VERIFIED");
 							finished = true;
@@ -296,6 +314,7 @@ public class Peer implements Runnable{
 	 public void acceptMessage() throws IOException {
 	        System.out.println("IN ACCEPT MESSAGE");
 	        Message peerResponse = Message.readMessage(inputStream);
+	        lastMessageReceived = System.currentTimeMillis();
 	        System.out.println("len is: " + peerResponse.length + " & peer response message id is: " + peerResponse.message_id);
 
 	        /*store bitfield response from peer*/
@@ -319,7 +338,7 @@ public class Peer implements Runnable{
 	            Message.writeMessage(outputStream, unchokePeer);
 	            System.out.println("SENT UNCHOKE MESSAGE TO PEER");
 	        } else if (peerResponse.message_id == Message.request) {
-	            System.out.println("WE RECIEVED THE REQUEST FROM PEER");
+	            System.out.println("REQUEST MESSAGE RECEIVED FROM PEER");
 	            uploadPiece((RequestMessage) peerResponse);
 	        } else if (peerResponse.message_id == Message.keep_alive) {
 	            System.out.println("WE RECIEVED KEEP ALIVE MESSAGE FROM PEER");
@@ -330,8 +349,7 @@ public class Peer implements Runnable{
 	        } else {
 	            System.out.println("DID NOT RECIEVE ANY RELEVANT MESSAGES FROM THE PEER");
 	        }
-	    }
-	    /*Method will continue to upload currently downloaded Pieces after all the Pieces have been downloaded*/
+	}/*end of acceptMessage*/
 	
 	/*Method will continue to upload currently downloaded Pieces after all the Pieces have been downloaded*/
 	private void uploadOnly(){
@@ -353,8 +371,8 @@ public class Peer implements Runnable{
 		
 		/*sending a request for each block to the peer*/
 		for (int i = 0; i < newPiece.totalBlocks; i++){
-			int offset = BLOCKSIZE*i;
 			
+			int offset = BLOCKSIZE*i;
 			RequestMessage rmessage;
 			
 			if (newPiece.lastPiece && i == newPiece.totalBlocks - 1){
@@ -415,7 +433,7 @@ public class Peer implements Runnable{
 		int piece_index = peerResponse.getPieceIndex();
 		int begin = peerResponse.getBeginningOfBlock();
 		byte[] requestedBlock = new byte[size];
-		byte[] pieceInfo = RUBTClient.verifiedPieces.get(piece_index).fullPiece; 
+		byte[] pieceInfo = RUBTClient.getVerifiedPiece(piece_index).fullPiece; 
 		System.arraycopy(pieceInfo, begin, requestedBlock, 0, size);
 		PieceMessage peerPiece = new PieceMessage(piece_index, begin, requestedBlock);
 	
@@ -458,9 +476,14 @@ public class Peer implements Runnable{
 				System.err.println(". Some pieces of the file to download may be lost.");
 			} else {
 				peerTimer.schedule(new KeepAlive(), 120000, 120000);
+				peerTimer.schedule(new chokeIdlePeers(), RUBTClient.getInterval() * 1000, RUBTClient.getInterval() * 1000);
 				downloadPieces();
-				uploadOnly();
-                RUBTClient.writeToDisk(RUBTClient.fName);
+				if (!stopProgram){
+					uploadOnly();
+				}
+				Message chokeMessage = new Message(1, (byte) 0);
+				Message.writeMessage(outputStream, chokeMessage);
+                RUBTClient.writeToDisk(RUBTClient.getfName());
 			}
 			
 		} catch (UnsupportedEncodingException e) {
@@ -474,15 +497,15 @@ public class Peer implements Runnable{
 			return;
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
-		}
-		
-		try {
-			inputStream.close();
-			outputStream.close();
-			peerSocket.close();
-			peerTimer.purge();
-		} catch (Exception e){
-			System.err.println(e.getMessage());
+		} finally {
+			try {
+				inputStream.close();
+				outputStream.close();
+				peerSocket.close();
+				peerTimer.cancel();
+			} catch (Exception e){
+				System.err.println(e.getMessage());
+			}
 		}
 	} /*end of run*/
 	
@@ -501,4 +524,19 @@ public class Peer implements Runnable{
 			}
 		}
 	}/*end of KeepAlive class*/
+	
+	/*specific timer task subclass used to choke any peers that have not sent us messages within the last interval*/
+	class chokeIdlePeers extends TimerTask {
+		public void run(){
+			
+			if (System.currentTimeMillis() - lastMessageReceived > RUBTClient.getInterval()*1000){
+				Message chokeMessage = new Message(1, (byte) 0);
+				try {
+					Message.writeMessage(outputStream, chokeMessage);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}/*end of chokeIdlePeers class*/
 }
