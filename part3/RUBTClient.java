@@ -478,6 +478,8 @@ public class RUBTClient extends Thread{
             }
         }/*end of for loop*/
         file.close();
+        
+        System.out.println("FILE SAVED TO DISK");
     }/*end of writeToDisk*/
     
     public static void startClientThread() throws UnsupportedEncodingException{
@@ -491,14 +493,14 @@ public class RUBTClient extends Thread{
         }
     }
     
-    /* Client thread run method without use of GUI
+    
     public void run(){
+    	
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
-            beginTime = System.currentTimeMillis(); //This is where we will begin to time the download
             publishToTracker("started");
             clientTimer.schedule(new publishStatus(), 0, interval*1000);
-            
+            /* Only implement this block without the GUI
             while(true){  
                 Scanner sc = new Scanner(System.in);
                 
@@ -517,6 +519,7 @@ public class RUBTClient extends Thread{
                 }
 
             }
+            */   
             
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -526,9 +529,9 @@ public class RUBTClient extends Thread{
             e.printStackTrace();
         }
         
-    }*/
+    }
     
-    /*Task that publishes the connection information to the tracker*/
+   /*Task that publishes the connection information to the tracker*/
    class publishStatus extends TimerTask {
         public void run(){
             System.out.println("Current status being published to tracker:");
@@ -607,7 +610,6 @@ public class RUBTClient extends Thread{
 
    public static void updateDownloadTime(long currentTime) {
 	   downloadTime = (currentTime - beginTime)/1000.0;
-	   System.out.println("Download time is " + downloadTime);
    }
 
    public static int getDownloaded() {
