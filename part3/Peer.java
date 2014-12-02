@@ -54,7 +54,7 @@ public class Peer implements Runnable{
 	
 	boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 	
-	private static boolean stopProgram;
+	private boolean stopProgram;
 	
 	/**
 	 * Creates a new peer object
@@ -281,6 +281,8 @@ public class Peer implements Runnable{
 						RUBTClient.updateClientPieces(i);
 						RUBTClient.updateDownloadTime(System.currentTimeMillis());
 						torrentGUI.updateDownload();
+                                                torrentGUI.updateConnectedPeers();
+                                                torrentGUI.updateProgressBar();
 						torrentGUI.updateTime(RUBTClient.getDownloadTime());
 				
 						System.out.println("Num Pieces verified: " + RUBTClient.getNumPiecesVerified());
@@ -306,8 +308,6 @@ public class Peer implements Runnable{
 			}/*end of inner while*/
 
 		}/*end of outer while loop*/
-		
-		uploadOnly();
 		
 	}/*end of downloadPieces*/
 	
@@ -352,8 +352,10 @@ public class Peer implements Runnable{
 	}/*end of acceptMessage*/
 	
 	/*Method will continue to upload currently downloaded Pieces after all the Pieces have been downloaded*/
-	private void uploadOnly(){
-		
+	private void uploadOnly() throws IOException{
+            while(true){
+                acceptMessage();
+            }
 	}/*end of uploadOnly*/
 	
 	
@@ -478,9 +480,6 @@ public class Peer implements Runnable{
 				peerTimer.schedule(new KeepAlive(), 120000, 120000);
 				peerTimer.schedule(new chokeIdlePeers(), RUBTClient.getInterval() * 1000, RUBTClient.getInterval() * 1000);
 				downloadPieces();
-				if (!stopProgram){
-					uploadOnly();
-				}
 				Message chokeMessage = new Message(1, (byte) 0);
 				Message.writeMessage(outputStream, chokeMessage);
 			}
@@ -507,6 +506,8 @@ public class Peer implements Runnable{
 			}
 		}
 	} /*end of run*/
+
+    
 	
 	/**
 	*specific timer task subclass used to send keep-alive message to peer every two minutes
@@ -539,11 +540,20 @@ public class Peer implements Runnable{
 		}
 	}/*end of chokeIdlePeers class*/
 	
-	public static boolean getStopProgram(){
-		return stopProgram;
+	public boolean getStopProgram(){
+		return this.stopProgram;
 	}
-	
-	public static void updateStopProgram(){
-		stopProgram = true;
+ 
+        public void setStopProgram(Boolean stop) {
+           this.stopProgram = stop; 
+        }
+        
+	public void updateStopProgram(){
+		this.stopProgram = true;
 	}
+        
+        public void getDownloadRate(){
+            
+        }
+        
 }
