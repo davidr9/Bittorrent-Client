@@ -54,7 +54,7 @@ public class Peer implements Runnable{
 	
 	boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 	
-	static boolean stopProgram;
+	private static boolean stopProgram;
 	
 	/**
 	 * Creates a new peer object
@@ -483,7 +483,6 @@ public class Peer implements Runnable{
 				}
 				Message chokeMessage = new Message(1, (byte) 0);
 				Message.writeMessage(outputStream, chokeMessage);
-                RUBTClient.writeToDisk(RUBTClient.getfName());
 			}
 			
 		} catch (UnsupportedEncodingException e) {
@@ -539,4 +538,12 @@ public class Peer implements Runnable{
 			}
 		}
 	}/*end of chokeIdlePeers class*/
+	
+	public static boolean getStopProgram(){
+		return stopProgram;
+	}
+	
+	public static void updateStopProgram(){
+		stopProgram = true;
+	}
 }
