@@ -14,7 +14,7 @@ public class Piece {
 
 	final int BLOCKSIZE = 16384; /*generally accepted size of block is 2^14*/
 	
-	public int totalBlocks = RUBTClient.pieceLength/BLOCKSIZE; /*total number of blocks that should make up the full piece*/
+	public int totalBlocks = RUBTClient.getPieceLength()/BLOCKSIZE; /*total number of blocks that should make up the full piece*/
 	
 	private ByteBuffer requestedPiece; /*the expected SHA-1 hash of the piece*/
 	
@@ -32,18 +32,19 @@ public class Piece {
 	
 	public int lastBLOCKSIZE; /*stores the size of each block for the last piece*/
 	
-	/*constructor takes the index in which the piece will be placed into an arraylist*/
+	/*constructor takes the index in which the piece will be placed into an array list*/
 	public Piece(int index){
 		this.index = index;
 		this.requestedPiece = RUBTClient.pieces[index];
 	
 		this.blocks = new ArrayList<byte[]>();
 		
-		if (index == RUBTClient.numPieces-1){
+		/*if this is the last piece of the file, it may be smaller than the rest. Adjust the blocks expected as necessary*/
+		if (index == RUBTClient.getNumPieces()-1){
 			System.out.println("Downloading last piece of file");
 			lastPiece = true;
-			totalBlocks = RUBTClient.lastPieceLength/BLOCKSIZE + 1;
-			lastBLOCKSIZE = RUBTClient.lastPieceLength%BLOCKSIZE;
+			totalBlocks = RUBTClient.getLastPieceLength()/BLOCKSIZE + 1;
+			lastBLOCKSIZE = RUBTClient.getLastPieceLength()%BLOCKSIZE;
 		}
 		
 		/*intitializes the blocks arraylist to null*/
@@ -53,11 +54,12 @@ public class Piece {
 	}
 	
 	/**
-	 * Inserts specified block at the given index.
-	 * @param blockOffset
-	 * @param block
-	 * @return
-	 * @throws UnsupportedEncodingException
+	 * Inserts specified block at the given index of the piece to maintain the order
+	 * 
+	 * @param blockOffset beginning index of block within piece
+	 * @param block data of the block
+	 * @return true if successful, false o/w
+	 * @throws exceptions for call to verifyPiece
 	 */
 	public boolean insertBlock(int blockOffset, byte[] block) throws UnsupportedEncodingException, NoSuchAlgorithmException{
 		
@@ -84,7 +86,8 @@ public class Piece {
 	}/*end of insertBlock*/
 	
 	/**
-	 * Checks to see if this piece is correct
+	 * Finds the SHA-1 Hash of the piece created
+	 * 
 	 * @return true if piece is valid
 	 * @throws UnsupportedEncodingException
 	 */	
@@ -126,9 +129,6 @@ public class Piece {
 		convert.update(fullPiece);
 		byte[] newPieceHash = convert.digest();
 		String requestedPieceHash = RUBTClient.escape(newPieceHash);
-		
-		System.out.println(requestedPieceHash);
-		System.out.println(originPieceHash);
 		
 		if (requestedPieceHash.equals(originPieceHash)){
 			verified = true;
