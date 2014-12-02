@@ -1,3 +1,4 @@
+import java.awt.Component;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -17,49 +18,49 @@ public class RUBTClient extends Thread{
     
     private static int port; /*Port on which this client is downloading/uploading*/
     
-    static int uploaded; /*keeps track of how much of the file has been uploaded to other peers, in bytes*/
+    private static int uploaded; /*keeps track of how much of the file has been uploaded to other peers, in bytes*/
     
-    static int downloaded; /*keeps track of how much of the file has been successfully downloaded from other peers, in bytes*/
+    private static int downloaded; /*keeps track of how much of the file has been successfully downloaded from other peers, in bytes*/
     
-    static int left; /*keeps track of how much of the file still needs to be written, in bytes*/
+    private static int left; /*keeps track of how much of the file still needs to be written, in bytes*/
     
     public static ByteBuffer[] pieces; /*Expected SHA-1 hashes of each piece of the file given from the torrent*/
     
-    public static int numPieces; /*Number of pieces to download form the file*/
+    private static int numPieces; /*Number of pieces to download form the file*/
     
-    public static int pieceLength; /*default length of each piece*/
+    private static int pieceLength; /*default length of each piece*/
     
-    public static int lastPieceLength; /*length of last piece if smaller than the rest*/
+    private static int lastPieceLength; /*length of last piece if smaller than the rest*/
     
-    public static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>(); /*shared array list for all already verified pieces*/
+    private static ArrayList<Piece> verifiedPieces = new ArrayList<Piece>(); /*shared array list for all already verified pieces*/
     
-    public static int numPiecesVerified = 0; /*number of pieces verified thus far*/
+    private static int numPiecesVerified = 0; /*number of pieces verified thus far*/
     
-    public static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
+    private static byte[] clientID = "davidrrosheencjulied".getBytes(); /*string of length 20 used as local host's ID*/ 
     
-    public static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
+    private static TorrentInfo torrentData = null; /*contains parsed data from torrent*/
     
-    public static List<Peer> connectedPeers; /*Peers to attempt connections with from the peer list given by the torrent*/
+    private static List<Peer> connectedPeers; /*Peers to attempt connections with from the peer list given by the torrent*/
     
     private static boolean singlePeer; /*If 3rd argument is specified as IPAddress, we only connect to this peer*/
     
-    public static String singlePeerAddress; /*for 3rd argument if specified*/
+    private static String singlePeerAddress; /*for 3rd argument if specified*/
     
     private static Timer clientTimer = new Timer(true); /*Timer object used to keep track of the time*/
     
-    public static long beginTime; /*time the download started*/
+    private static long beginTime; /*time the download started*/
     
-    public static long downloadTime; /*time it took to download during this session*/
+    private static double downloadTime; /*time it took to download during this session*/
     
-    public static int interval; /*interval received from tracker for periodic tracker announces*/
+    private static int interval; /*interval received from tracker for periodic tracker announces*/
     
-    public static byte[] clientBitfield = new byte[numPieces]; /*byte array that shows the pieces the client has downloaded*/
+    private static byte[] clientBitfield = new byte[numPieces]; /*byte array that shows the pieces the client has downloaded*/
     
     private static boolean[] clientPieces; /*zero-based piece indecis will be true if piece has been downlaoded/verified and 0 o/w*/
     
-    public static String fName; /*name of the file in which the pieces will be written to*/
+    private static String fName; /*name of the file in which the pieces will be written to*/
 
-    public static String[] args;
+    private static String[] args;
     
     public static void main(String[] arguments) {
         
@@ -123,6 +124,8 @@ public class RUBTClient extends Thread{
         }
        
         ArrayList<Peer> peers = sendRequestToTracker(); /*List of peers received from the tracker*/ 
+        
+        beginTime = System.currentTimeMillis(); /*This is where we will begin to time the download*/
         
         if (singlePeer){
             connectToPeer(peers, singlePeerAddress);
@@ -342,29 +345,6 @@ public class RUBTClient extends Thread{
         return null;
     }/*end of choosePeer method*/
     
-    public static int extractPort(URL url){
-        return url.getPort();
-    }
-    
-    /*
-     * Updates clientPieces after downloading and verifying a piece
-     * 
-     * @param pieceIndex the zero-based piece index of the piece being updated
-     * @return updated boolean array clientPieces
-     */
-    public static void updateClientPieces(int pieceIndex){
-        clientPieces[pieceIndex] = true;
-        clientBitfield = convertBooleanField(clientPieces);
-    }/*end of updateClientPieces*/
-    
-    /*method updates the number of blocks uploaded*/
-    public static void updateUploaded(int size){
-        uploaded += size; 
-    }/*end of updateUploaded*/
-    
-    public static byte[] getClientBitfield(){
-        return clientBitfield; 
-    }
     /*
      * Connects to peers at a specific IP address and starts threads for each. Joins threads upon completion and prints total download time
      * 
@@ -498,7 +478,6 @@ public class RUBTClient extends Thread{
             }
         }/*end of for loop*/
         file.close();
-        System.out.println("END OF WRITE TO DISK METHOD");
     }/*end of writeToDisk*/
     
     public static void startClientThread() throws UnsupportedEncodingException{
@@ -512,7 +491,7 @@ public class RUBTClient extends Thread{
         }
     }
     
-    /*
+    /* Client thread run method without use of GUI
     public void run(){
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
@@ -547,9 +526,8 @@ public class RUBTClient extends Thread{
             e.printStackTrace();
         }
         
-    }
+    }*/
     
-    */
     /*Task that publishes the connection information to the tracker*/
    class publishStatus extends TimerTask {
         public void run(){
@@ -573,5 +551,107 @@ public class RUBTClient extends Thread{
         }
         
     }/*end of publishTrackerInfo*/
+   
+   public static int extractPort(URL url){
+       return url.getPort();
+   }
+   
+   /*The remaining methods are simple get and update methods*/
+   
+   /*
+    * Updates clientPieces after downloading and verifying a piece
+    * 
+    * @param pieceIndex the zero-based piece index of the piece being updated
+    * @return updated boolean array clientPieces
+    */
+   public static void updateClientPieces(int pieceIndex){
+       clientPieces[pieceIndex] = true;
+       clientBitfield = convertBooleanField(clientPieces);
+   }/*end of updateClientPieces*/
+   
+   /*method updates the number of blocks uploaded*/
+   public static void updateUploaded(int size){
+       uploaded += size; 
+   }/*end of updateUploaded*/
+   
+   public static byte[] getClientBitfield(){
+       return clientBitfield; 
+   }
+   
+   /*
+    * Add new piece to global list of client's verified pieces, incrementing the number of verified pieces
+    * 
+    * @param index zero-based piece index
+    */
+   public static void setVerifiedPieces(int index, Piece piece){
+	   verifiedPieces.set(index, piece);
+	   numPiecesVerified++;
+   }
+   
+   /*Update the number of bytes downloaded and the number of bytes now left to download in the file
+    * 
+    * @param sizeInBytes number of bytes by which to update the count
+    */
+   public static void updateDownloaded(int sizeInBytes){
+	   downloaded += sizeInBytes;
+	   left -= sizeInBytes;
+   }
+
+   public static int getNumPiecesVerified() {
+	   return numPiecesVerified;
+   }
+
+   public static int getNumPieces() {
+	   return numPieces;
+   }
+
+   public static void updateDownloadTime(long currentTime) {
+	   downloadTime = (currentTime - beginTime)/1000.0;
+	   System.out.println("Download time is " + downloadTime);
+   }
+
+   public static int getDownloaded() {
+	   return downloaded;
+   }
+   
+   public static int getUploaded(){
+	   return uploaded;
+   }
+   
+   public static Piece getVerifiedPiece(int index){
+	   return verifiedPieces.get(index);
+   }
+   
+   public static TorrentInfo getTorrentData(){
+	   return torrentData;
+   }
+
+   public static int getPieceLength() {
+	   return pieceLength;
+   }
+
+   public static int getLastPieceLength() {
+	   return lastPieceLength;
+   }
+
+   public static List<Peer> getConnectedPeers() {
+	   return connectedPeers;
+   }
+
+   public static double getDownloadTime() {
+	   return downloadTime;
+   }
+
+   public static String getfName() {
+	   return fName;
+   }
+
+   public static byte[] getClientID() {
+	   return clientID;
+   }
+   
+   public static int getInterval(){
+	   return interval;
+   }
     
 }/*end of RUBTClient class*/
