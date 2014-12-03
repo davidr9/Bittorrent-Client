@@ -54,7 +54,7 @@ public class Peer implements Runnable{
 	
 	boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 	
-	private boolean stopProgram;
+	private static boolean stopProgram;
 	
 	/**
 	 * Creates a new peer object
@@ -541,19 +541,10 @@ public class Peer implements Runnable{
 	}/*end of chokeIdlePeers class*/
 	
 	public boolean getStopProgram(){
-		return this.stopProgram;
+		return stopProgram;
 	}
- 
-        public void setStopProgram(Boolean stop) {
-           this.stopProgram = stop; 
-        }
         
 	public void updateStopProgram(){
 		this.stopProgram = true;
 	}
-        
-        public void getDownloadRate(){
-            
-        }
-        
 }
