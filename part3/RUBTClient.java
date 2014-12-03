@@ -62,7 +62,11 @@ public class RUBTClient extends Thread{
 
     private static String[] args;
     
-    public static int fileLength; 
+    public static int fileLength;
+    
+    public static int recentBytes; 
+    
+    public static int downloadRate; 
     
     public static void main(String[] arguments) {
         
@@ -501,7 +505,11 @@ public class RUBTClient extends Thread{
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
             publishToTracker("started");
+            recentBytes = downloaded; 
+            clientTimer.schedule(new getDownloadRate(), 1000, 1000);
             clientTimer.schedule(new publishStatus(), 0, interval*1000);
+            //gets download rate every 1 second
+            
             /* Only implement this block without the GUI
             while(true){  
                 Scanner sc = new Scanner(System.in);
@@ -532,7 +540,15 @@ public class RUBTClient extends Thread{
         }
         
     }
-    
+   
+   class getDownloadRate extends TimerTask{
+        public void run() { 
+            int time = downloaded - recentBytes / 1000; 
+            torrentGUI.dlSpeedDisplay.setText(Integer.toString(time));
+            
+        }
+       
+   }
    /*Task that publishes the connection information to the tracker*/
    class publishStatus extends TimerTask {
         public void run(){
