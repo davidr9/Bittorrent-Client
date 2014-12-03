@@ -1,4 +1,5 @@
 
+import java.awt.Color;
 import java.awt.Cursor;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -6,6 +7,8 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.plaf.ColorUIResource;
 
 /*
  * @author Rosheen C.
@@ -47,7 +50,9 @@ public class torrentGUI extends javax.swing.JFrame {
         peerConnectionsWindow = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
+        startButton.setFont(new java.awt.Font("Ubuntu Medium", 1, 15)); // NOI18N
         startButton.setText("START");
         startButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -55,6 +60,7 @@ public class torrentGUI extends javax.swing.JFrame {
             }
         });
 
+        stopButton.setFont(new java.awt.Font("Ubuntu Medium", 1, 15)); // NOI18N
         stopButton.setText("STOP");
         stopButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -62,6 +68,7 @@ public class torrentGUI extends javax.swing.JFrame {
             }
         });
 
+        clearButton.setFont(new java.awt.Font("Ubuntu Medium", 1, 15)); // NOI18N
         clearButton.setText("CLEAR");
         clearButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -69,21 +76,31 @@ public class torrentGUI extends javax.swing.JFrame {
             }
         });
 
+        downloadLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
         downloadLabel.setText("Downloaded:");
 
         downloadDisplay.setText("0");
         downloadDisplay.setEditable(false);
 
-        dlSpeedLabel.setText("Download Speed: ");
+        dlSpeedLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
+        dlSpeedLabel.setText("Download Speed:");
+
+        progressBar.setBackground(new java.awt.Color(24, 12, 12));
+        progressBar.setFont(new java.awt.Font("Ubuntu Medium", 1, 15)); // NOI18N
+        progressBar.setForeground(java.awt.Color.black);
+        progressBar.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        progressBar.setOpaque(false);
 
         dlSpeedDisplay.setEditable(false);
         dlSpeedDisplay.setText("0");
 
+        timeLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
         timeLabel.setText("Time:");
 
         timeDisplay.setEditable(false);
         timeDisplay.setText("0.0");
 
+        peerConnectionsLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
         peerConnectionsLabel.setText("Peer Connections:");
 
         peerConnectionsWindow.setEditable(false);
@@ -114,7 +131,7 @@ public class torrentGUI extends javax.swing.JFrame {
                             .addComponent(downloadDisplay)
                             .addComponent(dlSpeedDisplay)
                             .addComponent(peerConnectionsWindow))))
-                .addContainerGap(32, Short.MAX_VALUE))
+                .addContainerGap(47, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -124,29 +141,43 @@ public class torrentGUI extends javax.swing.JFrame {
                     .addComponent(timeLabel)
                     .addComponent(timeDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(startButton))
-                .addGap(24, 24, 24)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(downloadLabel)
-                    .addComponent(downloadDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(stopButton))
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(clearButton)
-                    .addComponent(dlSpeedLabel)
-                    .addComponent(dlSpeedDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(peerConnectionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(peerConnectionsWindow, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addGroup(layout.createSequentialGroup()
+                            .addGap(24, 24, 24)
+                            .addComponent(stopButton)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
+                            .addComponent(downloadDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(20, 20, 20)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(downloadLabel)
+                        .addGap(18, 18, 18)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(peerConnectionsWindow, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(peerConnectionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(1, 1, 1)
+                                .addComponent(clearButton))
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(18, 18, 18)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(dlSpeedDisplay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(dlSpeedLabel))))))
                 .addGap(18, 18, 18)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(26, Short.MAX_VALUE))
+                .addContainerGap(22, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>                        
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
+        ColorUIResource purple = new ColorUIResource(new Color(204, 0, 204));
+        UIManager.put("nimbusOrange",purple);
         progressBar.setMinimum(0);
         if (!programStarted) {
             try {
@@ -172,7 +203,8 @@ public class torrentGUI extends javax.swing.JFrame {
                 stopButton.setEnabled(false);
             }
             System.out.println("Total time of download: " + RUBTClient.getDownloadTime() + " ms");
-            try {
+        }
+        try {
                 RUBTClient.publishToTracker("stopped");
                 RUBTClient.writeToDisk(RUBTClient.getfName());
             } catch (MalformedURLException e) {
@@ -182,18 +214,19 @@ public class torrentGUI extends javax.swing.JFrame {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
     }                                          
 
     private void clearButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
         downloadDisplay.setText("0");
         timeDisplay.setText("0");
+        progressBar.setValue(0);
+        peerConnectionsWindow.setText("0");
 
     }                                           
 
     public static void updateDownload() {
         String display = Integer.toString(RUBTClient.getDownloaded());
-        downloadDisplay.setText(display);
+        downloadDisplay.setText(display + " Bytes");
 
     }
 
@@ -204,10 +237,6 @@ public class torrentGUI extends javax.swing.JFrame {
     public static void updateProgressBar() {
         progressBar.setMaximum(RUBTClient.getNumPieces());
         progressBar.setValue(RUBTClient.getNumPiecesVerified());
-    }
-
-    public static void updateDownloadSpeed() {
-
     }
 
     public static void updateConnectedPeers() {
