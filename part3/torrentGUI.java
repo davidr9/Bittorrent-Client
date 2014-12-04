@@ -77,13 +77,13 @@ public class torrentGUI extends javax.swing.JFrame {
         });
 
         downloadLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
-        downloadLabel.setText("Downloaded:");
+        downloadLabel.setText("Downloaded (Bytes):");
 
         downloadDisplay.setText("0");
         downloadDisplay.setEditable(false);
 
         dlSpeedLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
-        dlSpeedLabel.setText("Download Speed:");
+        dlSpeedLabel.setText("Download Speed (kBps):");
 
         progressBar.setBackground(new java.awt.Color(24, 12, 12));
         progressBar.setFont(new java.awt.Font("Ubuntu Medium", 1, 15)); // NOI18N
@@ -95,10 +95,10 @@ public class torrentGUI extends javax.swing.JFrame {
         dlSpeedDisplay.setText("0");
 
         timeLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
-        timeLabel.setText("Time:");
+        timeLabel.setText("Time (seconds):");
 
         timeDisplay.setEditable(false);
-        timeDisplay.setText("0.0");
+        timeDisplay.setText("0");
 
         peerConnectionsLabel.setFont(new java.awt.Font("Ubuntu", 1, 15)); // NOI18N
         peerConnectionsLabel.setText("Peer Connections:");
@@ -123,7 +123,7 @@ public class torrentGUI extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(downloadLabel)
                             .addComponent(dlSpeedLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(timeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(timeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(peerConnectionsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(53, 53, 53)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -176,8 +176,8 @@ public class torrentGUI extends javax.swing.JFrame {
     }// </editor-fold>                        
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {                                            
-        ColorUIResource purple = new ColorUIResource(new Color(204, 0, 204));
-        UIManager.put("nimbusOrange",purple);
+        ColorUIResource purple = new ColorUIResource(new Color(160, 0, 240));
+        UIManager.put("nimbusOrange", purple);
         progressBar.setMinimum(0);
         if (!programStarted) {
             try {
@@ -221,17 +221,19 @@ public class torrentGUI extends javax.swing.JFrame {
         timeDisplay.setText("0");
         progressBar.setValue(0);
         peerConnectionsWindow.setText("0");
+        dlSpeedDisplay.setText("0");
 
     }                                           
 
     public static void updateDownload() {
         String display = Integer.toString(RUBTClient.getDownloaded());
-        downloadDisplay.setText(display + " Bytes");
+        downloadDisplay.setText(display);
 
     }
 
     public static void updateTime(double downloadTime) {
-        timeDisplay.setText(downloadTime + " s");
+    	String display = Double.toString(downloadTime);
+        timeDisplay.setText(display);
     }
 
     public static void updateProgressBar() {
