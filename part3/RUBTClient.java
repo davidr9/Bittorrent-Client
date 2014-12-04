@@ -505,8 +505,8 @@ public class RUBTClient extends Thread{
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
             publishToTracker("started");
-            recentBytes = downloaded; 
-            clientTimer.schedule(new getDownloadRate(), 1000, 1000);
+            //recentBytes = downloaded; 
+            clientTimer.schedule(new getDownloadRate(), 1000, 1000);           
             clientTimer.schedule(new publishStatus(), 0, interval*1000);
             //gets download rate every 1 second
             
@@ -519,7 +519,6 @@ public class RUBTClient extends Thread{
                     for (int i = 0; i < connectedPeers.size(); i++){
                         connectedPeers.get(i).th.stop();
                     }
-                    
                     if (downloadTime == 0){
                         downloadTime = (System.currentTimeMillis() - beginTime);
                     }
@@ -527,10 +526,8 @@ public class RUBTClient extends Thread{
                     publishToTracker("stopped");
                     break;
                 }
-
             }
-            */   
-            
+            */     
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
@@ -543,9 +540,10 @@ public class RUBTClient extends Thread{
    
    class getDownloadRate extends TimerTask{
         public void run() { 
-            int time = downloaded - recentBytes / 1000; 
-            torrentGUI.dlSpeedDisplay.setText(Integer.toString(time));
-            
+            int bytes = (getDownloaded() /1000); 
+            Double time = getDownloadTime();
+            int rate = (int) (bytes/time);
+            torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
         }
        
    }
