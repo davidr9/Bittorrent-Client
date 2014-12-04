@@ -63,10 +63,12 @@ public class RUBTClient extends Thread{
     private static String[] args;
     
     public static int fileLength;
-    
-    public static int recentBytes; 
-    
+        
     public static int downloadRate; 
+    
+	int[] rarestPieces = null; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/ 
+
+	int rarest = 0; 
     
     public static void main(String[] arguments) {
         
@@ -142,6 +144,23 @@ public class RUBTClient extends Thread{
         
     }/*end of main method*/
 
+    /**
+     * Finding the max value in the array of pieces.
+     * 
+     * */
+    public void getRarestPieces(){
+    	
+    	int max = 0;
+    	for(int i = 0; i<connectedPeers.size(); i++){ /*For each peer */
+    		for(int j=0; j<connectedPeers.get(i).whichPieces.length; j++){ /* go through this peer's list of pieces*/
+    			if(connectedPeers.get(i).whichPieces[j]==false){ /* If this peer does NOT have that piece...*/
+    				rarestPieces[j] = rarestPieces[j]++; /* that piece's rarity goes up one. */
+    			}
+    		}
+    	}
+    	
+    	
+    }
 
     /*
      * parses the data in the torrent file given by the user
