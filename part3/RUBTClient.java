@@ -1,12 +1,12 @@
-import java.awt.Component;
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.nio.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author Julie Duncan
@@ -67,6 +67,12 @@ public class RUBTClient extends Thread{
     public static int recentBytes; 
     
     public static int downloadRate; 
+
+    public static int[] rarestPieces = null; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/
+
+    int rarest = 0;
+    
+    public static LinkedBlockingQueue<Integer> rarestPieceIndexes = new LinkedBlockingQueue<>();
     
     public static void main(String[] arguments) {
         
@@ -320,10 +326,7 @@ public class RUBTClient extends Thread{
                 }
                 
                 return peers;
-            } catch (BencodingException e) {
-                System.err.println("Error: " + e.getMessage());
-                return null;
-            } catch (IOException e) {
+            } catch (BencodingException | IOException e) {
                 System.err.println("Error: " + e.getMessage());
                 return null;
             }
@@ -422,7 +425,7 @@ public class RUBTClient extends Thread{
                     return retVal;
                 }
 
-                retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1 ? true: false;
+                retVal[boolIndex++] = (bits[byteIndex] >> bitIndex & 0x01) == 1;
             }
         }
         return retVal;
@@ -469,13 +472,12 @@ public class RUBTClient extends Thread{
         /*sets the file length*/
         file.setLength(len);
         /*index in which the byte[] will be written*/
-        long index = 0;
+        long index;
         /*goes through pieces array and writes pieces to file*/
         for(int i = 0; i < verifiedPieces.size(); i++)
         {   
             if(verifiedPieces.get(i) == null)
             {
-                continue;
             }else{
                 /*writes to file if the index of the arraylist contains data*/
                 index = verifiedPieces.get(i).index * verifiedPieces.get(0).fullPiece.length;
@@ -487,6 +489,50 @@ public class RUBTClient extends Thread{
         
         System.out.println("FILE SAVED TO DISK");
     }/*end of writeToDisk*/
+
+	
+    /**
+     * Finding the max value in the boolean array of pieces.
+     */
+    public static void getRarestPieces() {
+        int highestMax = 0;
+        ArrayList<Integer> missingPieceNum = new ArrayList<>();
+        int i;
+        int j;
+        for (i = 0; i < connectedPeers.size(); i++) { /*For each peer */
+            for (j = 0; j < connectedPeers.get(i).whichPieces.length; j++) { /* go through this peer's list of pieces*/
+                if (connectedPeers.get(i).whichPieces[j] == false) { /* If this peer does NOT have that piece...*/
+                    rarestPieces[j] = rarestPieces[j]++; /* that piece's rarity goes up one. */
+                }
+            }//end of inner for
+        }//end of outer for
+        
+        /*gets hishest possible max in the rarestPieces array
+         *and creates an arraylist of the possible missing piece numbers */
+        for (i = 0; i < rarestPieces.length; i++) {
+            if (rarestPieces[i] > highestMax) {
+                highestMax = rarestPieces[i];
+            }
+            if(missingPieceNum.contains(rarestPieces[i]) == false){
+                missingPieceNum.add(rarestPieces[i]);
+            }
+        }//end of for
+        Collections.sort(missingPieceNum);
+        Collections.reverse(missingPieceNum);
+        
+        /*creates a queue of the indexes of the rarest pieces*/
+        for (i = 0; i < missingPieceNum.size(); i++) {//iterates based on the smallest possible number of max 
+            for (j = 0; j < rarestPieces.length; j++) {
+                if(rarestPieces[j] == missingPieceNum.get(i)){
+                    rarestPieceIndexes.add(j);
+                }
+            }
+        }//end of for
+        /*testing purposes: prints the rarest pieces indexes*/
+        for(i=0; i < rarestPieceIndexes.size();i++){
+            System.out.println("RAREST PIECES------ " + rarestPieceIndexes.toString());
+        }
+    }//end of getRarestPiece
     
     public static void startClientThread() throws UnsupportedEncodingException{
         Thread clientThread = null; /*thread to run this client*/
