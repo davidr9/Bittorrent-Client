@@ -54,8 +54,10 @@ public class Peer implements Runnable{
 	
 	boolean[] whichPieces = null; /*stores which pieces the peer has verified and can send to the client (index corresponds to 0-based piece index)*/
 	
-	private static boolean stopProgram;
+	private static boolean stopProgram; /*set to true when user has indicated they want to stop the donwload*/
 	
+	private Object lock = new Object();
+		
 	/**
 	 * Creates a new peer object
 	 * 
@@ -105,6 +107,7 @@ public class Peer implements Runnable{
 			System.out.println("Data output stream for " + this.IPAddress + " opened...");
 			this.inputStream = new DataInputStream(this.peerSocket.getInputStream()); //open input stream for incoming data
 			System.out.println("Data input stream for " + this.IPAddress + " opened...");
+            torrentGUI.updateConnectedPeers();
 			return true;
 		}catch (UnknownHostException e) { //catch error for incorrect host name and exit program
 	            System.out.println("Peer " + peerID + " is unknown");
@@ -258,6 +261,8 @@ public class Peer implements Runnable{
 				
 				for (int i = 0; i < RUBTClient.getNumPieces(); i++){
 					
+					/*synchronized (lock){*/
+					
 					if (stopProgram){
 						return;
 					}
@@ -281,8 +286,7 @@ public class Peer implements Runnable{
 						RUBTClient.updateClientPieces(i);
 						RUBTClient.updateDownloadTime(System.currentTimeMillis());
 						torrentGUI.updateDownload();
-                                                torrentGUI.updateConnectedPeers();
-                                                torrentGUI.updateProgressBar();
+                        torrentGUI.updateProgressBar();
 						torrentGUI.updateTime(RUBTClient.getDownloadTime());
 				
 						System.out.println("Num Pieces verified: " + RUBTClient.getNumPiecesVerified());
@@ -352,7 +356,7 @@ public class Peer implements Runnable{
 	}/*end of acceptMessage*/
 	
 	/*Method will continue to upload currently downloaded Pieces after all the Pieces have been downloaded*/
-	private void uploadOnly() throws IOException{
+	/*private void uploadOnly() throws IOException{
             while(true){
                 acceptMessage();
             }
@@ -497,6 +501,8 @@ public class Peer implements Runnable{
 			e.printStackTrace();
 		} finally {
 			try {
+				RUBTClient.removeConnectedPeer(IPAddress);
+                torrentGUI.updateConnectedPeers();
 				inputStream.close();
 				outputStream.close();
 				peerSocket.close();
