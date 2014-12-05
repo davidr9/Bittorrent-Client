@@ -63,12 +63,10 @@ public class RUBTClient extends Thread{
     private static String[] args;
     
     public static int fileLength;
-        
-    public static int downloadRate; 
     
-	int[] rarestPieces = null; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/ 
-
-	int rarest = 0; 
+    public static int recentBytes; 
+    
+    public static int downloadRate; 
     
     public static void main(String[] arguments) {
         
@@ -144,23 +142,6 @@ public class RUBTClient extends Thread{
         
     }/*end of main method*/
 
-    /**
-     * Finding the max value in the array of pieces.
-     * 
-     * */
-    public void getRarestPieces(){
-    	
-    	int max = 0;
-    	for(int i = 0; i<connectedPeers.size(); i++){ /*For each peer */
-    		for(int j=0; j<connectedPeers.get(i).whichPieces.length; j++){ /* go through this peer's list of pieces*/
-    			if(connectedPeers.get(i).whichPieces[j]==false){ /* If this peer does NOT have that piece...*/
-    				rarestPieces[j] = rarestPieces[j]++; /* that piece's rarity goes up one. */
-    			}
-    		}
-    	}
-    	
-    	
-    }
 
     /*
      * parses the data in the torrent file given by the user
@@ -524,8 +505,8 @@ public class RUBTClient extends Thread{
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
             publishToTracker("started");
-            //recentBytes = downloaded; 
-            clientTimer.schedule(new getDownloadRate(), 1000, 1000);           
+            recentBytes = downloaded; 
+            clientTimer.schedule(new getDownloadRate(), 0, 10);
             clientTimer.schedule(new publishStatus(), 0, interval*1000);
             //gets download rate every 1 second
             
@@ -538,6 +519,7 @@ public class RUBTClient extends Thread{
                     for (int i = 0; i < connectedPeers.size(); i++){
                         connectedPeers.get(i).th.stop();
                     }
+                    
                     if (downloadTime == 0){
                         downloadTime = (System.currentTimeMillis() - beginTime);
                     }
@@ -545,8 +527,10 @@ public class RUBTClient extends Thread{
                     publishToTracker("stopped");
                     break;
                 }
+
             }
-            */     
+            */   
+            
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {
@@ -559,10 +543,10 @@ public class RUBTClient extends Thread{
    
    class getDownloadRate extends TimerTask{
         public void run() { 
-            int bytes = (getDownloaded() /1000); 
-            Double time = getDownloadTime();
-            int rate = (int) (bytes/time);
-            torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
+        	int bytes = (getDownloaded() / 1000); 
+        	Double time = getDownloadTime();
+        	int rate = (int) (bytes/time);
+        	torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
         }
        
    }
@@ -690,5 +674,18 @@ public class RUBTClient extends Thread{
    public static int getInterval(){
 	   return interval;
    }
+
+   public static void removeConnectedPeer(String iPAddress) {
+		for (int i = 0; i < connectedPeers.size(); i++){
+			if (connectedPeers.get(i).getIP().equals(iPAddress)){
+				connectedPeers.remove(i);
+				return;
+			}
+		}
+	}
+
+   public static int getLeft() {
+		return left;
+	}
     
 }/*end of RUBTClient class*/
