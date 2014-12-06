@@ -1,0 +1,13 @@
+David Rubin 138008000
+Julie Duncan 132001134
+Rosheen Chaudhry 140004499
+
+Phase 3 Bittorrent Client Writeup
+
+Here is a link to our project on Github: https://github.com/davidrubin9/Internet-Technology
+
+Our bittorrent client creates a torrentGUI object that is the interface for the program. Our GUI creates multiple fields and buttons. "Start" begins the program, "Stop" exits the download without stopping the program, and "Clear" refreshes the data entries in the windows. In order to stop the program, the user must press "x." 
+
+Once start is pressed, our program decodes and parses the torrent file and obtains the necessary information to communicate with the tracker. Once we communicate with the tracker we obtain the bencoded list of peers with parts of the file and decode it. Next, we connect to all the peers and initiate a handshake with all of them. Next, we open a DataStream and send an interested message to the peers. We then wait for the peers to unchoke us and begin downloading from the peers. At the same time, we wait for interested messages from the peers and allow them to download any pieces that we have.
+
+After all the pieces have been downloaded, we write all the pieces to a file and then we write the file to the disk. 
