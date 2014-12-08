@@ -261,9 +261,11 @@ public class Peer implements Runnable{
 				
 				for (int i = 0; i < RUBTClient.getNumPieces(); i++){
 					
-					/*synchronized (lock){*/
-					
 					if (stopProgram){
+						return;
+					}
+					
+					if (RUBTClient.getNumPiecesVerified() == RUBTClient.getNumPieces()){
 						return;
 					}
 					
