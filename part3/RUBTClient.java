@@ -46,7 +46,7 @@ public class RUBTClient extends Thread{
     
     private static String singlePeerAddress; /*for 3rd argument if specified*/
     
-    private static Timer clientTimer = new Timer(true); /*Timer object used to keep track of the time*/
+    public static Timer clientTimer = new Timer(true); /*Timer object used to keep track of the time*/
     
     private static long beginTime; /*time the download started*/
     
@@ -62,17 +62,15 @@ public class RUBTClient extends Thread{
 
     private static String[] args;
     
-    public static int fileLength;
+    public static int fileLength;/*keeps track of the length of the file*/
     
-    public static int recentBytes; 
-    
-    public static int downloadRate; 
+    public static int downloadRate; /*keeps track of how fast the pieces are downloaded*/
 
-    public static int[] rarestPieces = null; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/
+    public static int[] rarestPieces; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/
 
-    int rarest = 0;
+    int rarest = 0; /*keeps track of the max rarest value*/
     
-    public static LinkedBlockingQueue<Integer> rarestPieceIndexes = new LinkedBlockingQueue<>();
+    public static LinkedBlockingQueue<Integer> rarestPieceIndexes = new LinkedBlockingQueue<>();/*keeps track of the indexes of the pieces based on their rarity*/
     
     public static void main(String[] arguments) {
         
@@ -490,27 +488,34 @@ public class RUBTClient extends Thread{
         System.out.println("FILE SAVED TO DISK");
     }/*end of writeToDisk*/
 
-	
+    
     /**
      * Finding the max value in the boolean array of pieces.
      */
     public static void getRarestPieces() {
+        System.out.println("IN RAREST PIECES METHOD");
+        rarestPieces = new int[numPieces];
         int highestMax = 0;
         ArrayList<Integer> missingPieceNum = new ArrayList<>();
         int i;
         int j;
+        System.out.println(connectedPeers.size());
+        System.out.println(connectedPeers.get(0).whichPieces.length);
+        System.out.println(connectedPeers.get(1).getIP());
+        
         for (i = 0; i < connectedPeers.size(); i++) { /*For each peer */
-            for (j = 0; j < connectedPeers.get(i).whichPieces.length; j++) { /* go through this peer's list of pieces*/
+            for (j = 0; j < numPieces; j++) { /* go through this peer's list of pieces*/
+                
                 if (connectedPeers.get(i).whichPieces[j] == false) { /* If this peer does NOT have that piece...*/
-                    rarestPieces[j] = rarestPieces[j]++; /* that piece's rarity goes up one. */
+                    rarestPieces[j]++; /* that piece's rarity goes up one. */
                 }
             }//end of inner for
         }//end of outer for
         
-        /*gets hishest possible max in the rarestPieces array
+        /*gets highest possible max in the rarestPieces array
          *and creates an arraylist of the possible missing piece numbers */
         for (i = 0; i < rarestPieces.length; i++) {
-            if (rarestPieces[i] > highestMax) {
+            if (rarestPieces[i] > highestMax) {//gets highest number in array
                 highestMax = rarestPieces[i];
             }
             if(missingPieceNum.contains(rarestPieces[i]) == false){
@@ -547,12 +552,14 @@ public class RUBTClient extends Thread{
     
     
     public void run(){
-    	
+        
         try {
             System.out.println("Thread " + escape(clientID) + " has begun running");
             publishToTracker("started");
-            recentBytes = downloaded; 
+            recentBytes = downloaded;
             clientTimer.schedule(new getDownloadRate(), 0, 10);
+           
+            
             clientTimer.schedule(new publishStatus(), 0, interval*1000);
             //gets download rate every 1 second
             
@@ -589,10 +596,10 @@ public class RUBTClient extends Thread{
    
    class getDownloadRate extends TimerTask{
         public void run() { 
-        	int bytes = (getDownloaded() / 1000); 
-        	Double time = getDownloadTime();
-        	int rate = (int) (bytes/time);
-        	torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
+            int bytes = (getDownloaded() / 1000); 
+            Double time = getDownloadTime();
+            int rate = (int) (bytes/time);
+            torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
         }
        
    }
@@ -652,8 +659,8 @@ public class RUBTClient extends Thread{
     * @param index zero-based piece index
     */
    public static void setVerifiedPieces(int index, Piece piece){
-	   verifiedPieces.set(index, piece);
-	   numPiecesVerified++;
+       verifiedPieces.set(index, piece);
+       numPiecesVerified++;
    }
    
    /*Update the number of bytes downloaded and the number of bytes now left to download in the file
@@ -661,77 +668,78 @@ public class RUBTClient extends Thread{
     * @param sizeInBytes number of bytes by which to update the count
     */
    public static void updateDownloaded(int sizeInBytes){
-	   downloaded += sizeInBytes;
-	   left -= sizeInBytes;
+       downloaded += sizeInBytes;
+       left -= sizeInBytes;
    }
 
    public static int getNumPiecesVerified() {
-	   return numPiecesVerified;
+       return numPiecesVerified;
    }
 
    public static int getNumPieces() {
-	   return numPieces;
+       return numPieces;
    }
 
    public static void updateDownloadTime(long currentTime) {
-	   downloadTime = (currentTime - beginTime)/1000.0;
+       downloadTime = (currentTime - beginTime)/1000.0;
    }
 
    public static int getDownloaded() {
-	   return downloaded;
+       return downloaded;
    }
    
    public static int getUploaded(){
-	   return uploaded;
+       return uploaded;
    }
    
    public static Piece getVerifiedPiece(int index){
-	   return verifiedPieces.get(index);
+       return verifiedPieces.get(index);
    }
    
    public static TorrentInfo getTorrentData(){
-	   return torrentData;
+       return torrentData;
    }
 
    public static int getPieceLength() {
-	   return pieceLength;
+       return pieceLength;
    }
 
    public static int getLastPieceLength() {
-	   return lastPieceLength;
+       return lastPieceLength;
    }
 
    public static List<Peer> getConnectedPeers() {
-	   return connectedPeers;
+       return connectedPeers;
    }
 
    public static double getDownloadTime() {
-	   return downloadTime;
+       return downloadTime;
    }
 
    public static String getfName() {
-	   return fName;
+       return fName;
    }
 
    public static byte[] getClientID() {
-	   return clientID;
+       return clientID;
    }
    
    public static int getInterval(){
-	   return interval;
+       return interval;
    }
 
    public static void removeConnectedPeer(String iPAddress) {
-		for (int i = 0; i < connectedPeers.size(); i++){
-			if (connectedPeers.get(i).getIP().equals(iPAddress)){
-				connectedPeers.remove(i);
-				return;
-			}
-		}
-	}
+        for (int i = 0; i < connectedPeers.size(); i++){
+            if (connectedPeers.get(i).getIP().equals(iPAddress)){
+                connectedPeers.remove(i);
+                return;
+            }
+        }
+    }
 
    public static int getLeft() {
-		return left;
-	}
+        return left;
+    }
     
 }/*end of RUBTClient class*/
+
