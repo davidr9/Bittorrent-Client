@@ -16,16 +16,27 @@ public class torrentGUI extends javax.swing.JFrame {
 
     	
     private javax.swing.JButton clearButton; //used to create clear button
+    
     public static javax.swing.JTextField dlSpeedDisplay;//creates textfield to display download speed
+    
     private javax.swing.JLabel dlSpeedLabel;//labels textfield for download speed
+    
     public static javax.swing.JTextField downloadDisplay;//displays the bytes downloaded
+    
     private javax.swing.JLabel downloadLabel;//labels textfield for bytes downloaded
+    
     private javax.swing.JLabel peerConnectionsLabel;//labels textfield for peer window
+    
     public static javax.swing.JTextField peerConnectionsWindow;//shows how many peers we are connected to
+    
     public static javax.swing.JProgressBar progressBar;//shows how many pieces we have downloaded
+    
     private javax.swing.JButton startButton;//starts the program when presses
+    
     private javax.swing.JButton stopButton;//stops the download when presses
+    
     public static javax.swing.JTextField timeDisplay;//displays the execution time of the program
+    
     private javax.swing.JLabel timeLabel;//label for timeDisplay
 
     public boolean programStarted = false;//tracks if start button was clicled
@@ -243,7 +254,6 @@ public class torrentGUI extends javax.swing.JFrame {
     public static void updateDownload() {
         String display = Integer.toString(RUBTClient.getDownloaded());
         downloadDisplay.setText(display);
-
     }
 
     /*updates the time display*/
