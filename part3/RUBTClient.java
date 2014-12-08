@@ -72,6 +72,8 @@ public class RUBTClient extends Thread{
 
     int rarest = 0; /*keeps track of the max rarest value*/
     
+    public static int recentBytes;
+    
     public static LinkedBlockingQueue<Integer> rarestPieceIndexes = new LinkedBlockingQueue<>();/*keeps track of the indexes of the pieces based on their rarity*/
     
     public static void main(String[] arguments) {
