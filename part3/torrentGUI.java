@@ -253,13 +253,13 @@ public class torrentGUI extends javax.swing.JFrame {
     /*updates the download display*/
     public static void updateDownload() {
         String display = Integer.toString(RUBTClient.getDownloaded());
-        downloadDisplay.setText(display);
+        downloadDisplay.setText(display + " B");
     }
 
     /*updates the time display*/
     public static void updateTime(double downloadTime) {
         String display = Double.toString(downloadTime);
-        timeDisplay.setText(display);
+        timeDisplay.setText(display + " s");
     }
 
     /*updates the progress bar based on the number of pieces downloaded*/

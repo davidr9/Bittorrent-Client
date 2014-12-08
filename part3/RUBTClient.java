@@ -66,6 +66,8 @@ public class RUBTClient extends Thread{
     
     public static int downloadRate; /*keeps track of how fast the pieces are downloaded*/
 
+    public static int recentBytes;
+
     public static int[] rarestPieces; /*Array which keeps track of the rarest pieces from the pieces the peers possess.*/
 
     int rarest = 0; /*keeps track of the max rarest value*/
@@ -599,7 +601,7 @@ public class RUBTClient extends Thread{
             int bytes = (getDownloaded() / 1000); 
             Double time = getDownloadTime();
             int rate = (int) (bytes/time);
-            torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate));
+            torrentGUI.dlSpeedDisplay.setText(Integer.toString(rate) + " kBps");
         }
        
    }
